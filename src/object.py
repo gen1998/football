@@ -1,0 +1,725 @@
+import numpy as np
+import pandas as pd
+
+import random
+import time
+import uuid
+
+from tqdm import tqdm
+
+import sys
+sys.path.append("../")
+
+from config.config import *
+from src.apply import *
+from src.utils import *
+
+class FootBaller:
+    def __init__(self, name, age, injury_possibility):
+        self.age = age
+        self.name = name
+        self.injury = 0
+        self.injury_possibility = injury_possibility
+        self.retire = 0
+        self.uuid = uuid.uuid1()
+        self.result = {}
+    
+    def get_goal(self, season_name):
+        self.result[season_name]["goal"] += 1
+    
+    def get_assist(self, season_name):
+        self.result[season_name]["assist"] += 1
+    
+    def get_game_count(self, season_name):
+        self.result[season_name]["試合数"] += 1
+    
+    def get_cs(self, season_name):
+        self.result[season_name]["CS"] += 1
+    
+    def consider_retirement(self):
+        rate = 0.00156*self.age*self.age - 1.18 + np.random.normal(0, 0.1) + self.injury_possibility
+        if rate > np.random.rand():
+            self.retire = 1
+        self.age += 1
+
+class FieldPlayer(FootBaller):
+    def __init__(self, name, age, position, pace, shooting, 
+                 passing, dribbling, defending, physicality, injury_possibility=0):
+        super().__init__(name, age, injury_possibility)
+        self.main_position = position
+        self.pace = pace
+        self.shooting = shooting
+        self.passing = passing
+        self.dribbling = dribbling
+        self.defending = defending
+        self.physicality = physicality
+        self.main_rate = self.cal_rate(self.main_position)
+        self.position_all_rate = {}
+
+        self.partification = 0
+        self.partification_position = None
+    
+    def cal_rate(self, position=None):
+        if position=='ST':
+            pac, sho, pas, dri, de, phy = 0.10, 0.80, 0.00, 0.03, 0.00, 0.10
+        if position=='CAM' or position=='CF':
+            pac, sho, pas, dri, de, phy = 0.10, 0.30, 0.38, 0.20, 0.00, 0.05
+        if position=='CM':
+            pac, sho, pas, dri, de, phy = 0.05, 0.05, 0.58, 0.20, 0.10, 0.05
+        if position=='CDM':
+            pac, sho, pas, dri, de, phy = 0.03, 0.00, 0.30, 0.10, 0.40, 0.20
+
+        if position=='CB':
+            pac, sho, pas, dri, de, phy = 0.08, 0.00, 0.00, 0.00, 0.75, 0.20
+
+        if position=='RW' or position=='LW':
+            pac, sho, pas, dri, de, phy = 0.39, 0.10, 0.15, 0.39, 0.00, 0.00
+        if position=='LM' or position=='RM':
+            pac, sho, pas, dri, de, phy = 0.20, 0.20, 0.33, 0.20, 0.10, 0.00
+        if position=='LWB' or position=='RWB':
+            pac, sho, pas, dri, de, phy = 0.38, 0.00, 0.20, 0.10, 0.30, 0.05
+        if position=='LB' or position=='RB':
+            pac, sho, pas, dri, de, phy = 0.38, 0.00, 0.10, 0.20, 0.30, 0.05
+        
+        if position is None:
+            return 75
+ 
+        rate = self.pace*pac+self.shooting*sho+self.passing*pas+self.dribbling*dri+self.defending*de+self.physicality*phy
+        return np.int8(np.round(rate))
+    
+    def select_main_position(self):
+        rate_list = []
+        for pos in ALL_POSITON_LOW:
+            rate_list.append(self.cal_rate(pos))
+        self.main_position = ALL_POSITON_LOW[np.argmax(rate_list)]
+        self.main_rate = self.cal_rate(self.main_position)
+        
+        if self.main_position=='RW':
+            if np.random.rand()<0.5:
+                self.main_position='LW'
+
+        elif self.main_position=='RM':
+            if np.random.rand()<0.5:
+                self.main_position='LM'
+        
+        elif self.main_position=='CAM':
+            if np.random.rand()<0.1:
+                self.main_position='CF'
+        
+        elif self.main_position=='RWB':
+            if np.random.rand()<0.5:
+                self.main_position='LWB'
+        
+        if self.main_position=='RB':
+            if np.random.rand()<0.5:
+                self.main_position='LB'
+
+    def cal_all_rate(self):
+        for pos in ALL_POSITON:
+            self.position_all_rate[pos] = self.cal_rate(pos)
+        
+        self.position_all_rate["GK"] = 0
+    
+    def print_player_data(self):
+        print(self.name, '  Rate:', self.main_rate, '(', self.main_position, ')')
+        print('-'*25)
+        print('  PAC ', self.pace, '  DRI ', self.dribbling)
+        print('  SHO ', self.shooting, '  DEF ', self.defending)
+        print('  PAS ', self.passing, '  PHY ', self.physicality)
+        print()
+        
+        print(f"        ST:{self.cal_rate('ST')}")
+        print(f" LW:{self.cal_rate('LW')} CAM,CF:{self.cal_rate('CAM')} RW:{self.cal_rate('RW')}")
+        print(f" LM:{self.cal_rate('LM')}  CM:{self.cal_rate('CM')}    RM:{self.cal_rate('RM')}")
+        print(f"LWB:{self.cal_rate('LWB')} CDM:{self.cal_rate('CDM')}    RWB:{self.cal_rate('RWB')}")
+        print(f" LB:{self.cal_rate('LB')}  CB:{self.cal_rate('CB')}    RB:{self.cal_rate('RB')}")
+        print()
+
+class GK(FootBaller):
+    def __init__(self, name, age, position, diving, handling, kicking, reflexes, speed, positioning, injury_possibility=0):
+        super().__init__(name, age, injury_possibility)
+        self.main_position = position
+        self.diving = diving
+        self.handling = handling
+        self.kicking = kicking
+        self.reflexes = reflexes
+        self.speed = speed
+        self.positioning = positioning
+        self.main_rate = self.cal_rate()
+        self.position_all_rate = {}
+
+        # 一般能力を15統一
+        self.pace = 15
+        self.shooting = 15
+        self.passing = 15
+        self.dribbling = 15
+        self.defending = 15
+        self.physicality = 15
+    
+    def cal_rate(self):
+        div, han, kic, ref, spe, pos = 0.23, 0.23, 0.06, 0.23, 0.05, 0.23
+        output = self.diving*div + self.handling*han + self.kicking*kic + self.reflexes*ref + self.speed*spe + self.positioning*pos
+        return np.int8(np.round(output))
+    
+    def cal_all_rate(self):
+        for pos in ALL_POSITON:
+            self.position_all_rate[pos] = 0
+        self.position_all_rate["GK"] = self.cal_rate()
+
+    def print_player_data(self):
+        print(self.name, '  Rate:', self.main_rate, '(', self.main_position, ')')
+        print('-'*25)
+        print('  DIV ', self.diving, '  REF ', self.reflexes)
+        print('  HAN ', self.handling, '  SPE ', self.speed)
+        print('  KIC ', self.kicking, '  POS ', self.positioning)
+        print()
+
+class Formation:
+    def __init__(self, name, formation, formation_priority, 
+                 formation_num, formation_shooting_rate, formation_assist_rate):
+        self.name = name
+        self.formation = formation
+        self.formation_priority = formation_priority
+        self.formation_num = formation_num
+        self.formation_shooting_rate = formation_shooting_rate
+        self.formation_assist_rate = formation_assist_rate
+        self.formation_flat = self.__flat_formation()
+        self.set_players_position()
+        self.players_flat = []
+    
+    def __flat_formation(self):
+        output = []
+        for _, value in self.formation.items():
+            output.extend(value)
+        output.append("GK")
+        return output
+    
+    def set_players_position(self):
+        output = {}
+        for ff in self.formation_flat:
+            output[ff] = []
+        output["GK"] = []
+        self.players = output
+
+    def cal_team_rate(self):
+        place_list = ['ATT', 'MID', 'DEF']
+        self.team_rate = {}
+        sum_all_rate = 0
+
+        for place in place_list:
+            sum_rate = 0
+            num = 0
+            position = self.formation[place]
+            for pos in position:
+                pos_players = self.players[pos]
+                for pp in pos_players:
+                    sum_rate += pp.position_all_rate[pos]
+                    sum_all_rate += pp.position_all_rate[pos]
+                    num += 1
+            sum_rate /= num
+            self.team_rate[place] = sum_rate
+        
+        self.team_rate["GK"] = self.players["GK"][0].main_rate
+        
+        sum_all_rate += self.players["GK"][0].main_rate
+        self.team_rate["ALL"] = sum_all_rate/11
+    
+    def print_formation(self):
+        for pos in self.formation_flat:
+            player = self.players[pos]
+            if pos == "GK":
+                player = player[0]
+                print(player.name, '  Rate:', player.main_rate, '(', player.main_position, ')')
+                print('-'*25)
+                print('  DIV ', player.diving, '  REF ', player.reflexes)
+                print('  HAN ', player.handling, '  SPE ', player.speed)
+                print('  KIC ', player.kicking, '  POS ', player.positioning)
+                print()
+            else:
+                for player_ in player:
+                    print(player_.name, '  Rate:', player_.position_all_rate[player_.partification_position], '(', player_.partification_position, ')')
+                    print('-'*25)
+                    print('  PAC ', player_.pace, '  DRI ', player_.dribbling)
+                    print('  SHO ', player_.shooting, '  DEF ', player_.defending)
+                    print('  PAS ', player_.passing, '  PHY ', player_.physicality)
+                    print()
+
+class Team:
+    def __init__(self, name, formation, min_rate=75, max_rate=85):
+        self.name = name
+        self.min_rate = min_rate
+        self.max_rate = max_rate
+        self.formation = formation
+        self.relegation = 0
+        self.promotion = 0
+        self.result = pd.DataFrame(columns=['win', 'lose', 'row', '得点', '失点', '得失点差', 'Points', '順位', 'リーグ名'])
+        self.competition_result = {}
+        self.affilation_players = None
+        self.league_name = None
+    
+    def set_affilation_players_rate(self):
+        #output = pd.DataFrame([p.position_all_rate for p in self.affilation_players if p.main_position!="GK"])
+        output = pd.DataFrame([p.position_all_rate for p in self.affilation_players])
+        #output["injury"] = [p.injury for p in self.affilation_players if p.main_position!="GK"]
+        output["injury"] = [p.injury for p in self.affilation_players]
+        output["partification"] = 0
+
+        #output_gk = pd.DataFrame([p.main_rate for p in self.affilation_players if p.main_position=="GK"], columns=["GK"])
+        #output["injury"] = [p.injury for p in self.affilation_players if i.main_position!="GK"]
+        #output_gk["partification"] = 0
+
+        self.affilation_players_all_rate = output
+        #self.affilation_players_gk_rate = output_gk
+
+    
+    def set_onfield_players(self):
+        self.formation.set_players_position()
+        self.formation.players_flat = []
+
+        for fp in self.formation.formation_priority:
+            select_num = self.formation.formation_num[fp]
+            df = self.affilation_players_all_rate[((self.affilation_players_all_rate.partification==0)&(self.affilation_players_all_rate.injury<1))]
+            #df = self.affilation_players_all_rate[self.affilation_players_all_rate.injury<1]
+            select_index = df.sort_values(fp, ascending=False).index.values[:select_num]
+            self.affilation_players_all_rate.loc[select_index, "partification"] = 1
+            
+            for index in select_index:
+                self.affilation_players[index].partification = 1
+                self.affilation_players[index].partification_position = fp
+                self.formation.players[fp].append(self.affilation_players[index])
+
+        for fps in self.formation.players.values():
+            self.formation.players_flat.extend(fps)
+
+
+class Game:
+    def __init__(self, home, away, competition_name=None, 
+                 mid_rate=0.5, gk_rate=0.2, random_std=10, 
+                 moment_num=10, extra=0, pk=0):
+        self.home = home
+        self.away = away
+        self.mid_rate = mid_rate
+        self.gk_rate = gk_rate
+        self.random_std = random_std
+        self.moment_num = moment_num
+        self.competition_name = competition_name
+        self.home_goal = 0
+        self.away_goal = 0
+        self.home_pk_goal = 0
+        self.away_pk_goal = 0
+        self.result = None
+        self.pk = pk
+        self.extra = extra
+    
+    # 誰が得点者でアシストしたか
+    def cal_goal_assit_player(self, side):
+        # goal
+        a = np.array([s.shooting for s in side.formation.players_flat])
+        b = np.array(side.formation.formation_shooting_rate)
+        weights = a*b/sum(a*b)
+        np.random.choice(side.formation.players_flat, 1, p=weights)[0].get_goal(self.competition_name)
+        
+        # asssit
+        if np.random.randn() > 0:
+            a = np.array([s.passing for s in side.formation.players_flat])
+            b = np.array(side.formation.formation_assist_rate)
+            weights = a*b/sum(a*b)
+            np.random.choice(side.formation.players_flat, 1, p=weights)[0].get_assist(self.competition_name)
+        
+    
+    def moment_battle(self):
+        home_rate = self.home.formation.team_rate
+        away_rate = self.away.formation.team_rate
+
+        home_ratio = home_rate['ALL']/(home_rate['ALL']+away_rate['ALL'])
+        away_ratio = away_rate['ALL']/(home_rate['ALL']+away_rate['ALL'])
+        
+        home_attack = (home_rate['ATT']+home_rate['MID']*self.mid_rate)*home_ratio
+        away_attack = (away_rate['ATT']+away_rate['MID']*self.mid_rate)*away_ratio
+        
+        home_defence = (home_rate['DEF']+home_rate['MID']*self.mid_rate)*home_ratio+home_rate["GK"]*self.gk_rate
+        away_defence = (away_rate['DEF']+away_rate['MID']*self.mid_rate)*away_ratio+away_rate["GK"]*self.gk_rate
+        
+        if home_attack-away_defence+np.random.normal(0, self.random_std) > 0:
+            self.home_goal += 1
+            self.cal_goal_assit_player(self.home)
+            
+        
+        if away_attack-home_defence+np.random.normal(0, self.random_std) > 0:
+            self.away_goal += 1
+            self.cal_goal_assit_player(self.away)
+    
+    def battle(self):
+        self.home_goal = 0
+        self.away_goal = 0
+
+        # 試合数カウント
+        for t in self.home.formation.players_flat:
+            t.get_game_count(self.competition_name)
+        
+        for t in self.away.formation.players_flat:
+            t.get_game_count(self.competition_name)
+
+        # 90分間試合
+        for i in range(self.moment_num):
+            self.moment_battle()
+        
+        if self.home_goal>self.away_goal:
+            self.result="home"
+        elif self.home_goal<self.away_goal:
+            self.result="away"
+        elif self.extra==1 or self.pk==1:
+            #延長戦
+            if self.extra==1:
+                for i in range(int(self.moment_num/3)):
+                    self.moment_battle()
+            
+            if self.home_goal>self.away_goal:
+                self.result="home"
+            elif self.home_goal<self.away_goal:
+                self.result="away"
+            else:
+                #PK戦
+                home_pk_players = sorted(self.home.formation.players_flat, key=lambda x:x.shooting, reverse=True)
+                away_pk_players = sorted(self.away.formation.players_flat, key=lambda x:x.shooting, reverse=True)
+
+                home_gk = self.home.formation.players["GK"][0]
+                away_gk = self.away.formation.players["GK"][0]
+
+                self.home_pk_goal = 0
+                self.away_pk_goal = 0
+
+                for i in range(5):
+                    if home_pk_players[i].shooting - away_gk.main_rate + np.random.normal(30, 10) > 0:
+                        self.home_pk_goal += 1
+                    if away_pk_players[i].shooting - home_gk.main_rate + np.random.normal(30, 10) > 0:
+                        self.away_pk_goal += 1
+                
+                if self.home_pk_goal > self.away_pk_goal:
+                    self.result = "home-pk"
+                elif self.home_pk_goal < self.away_pk_goal:
+                    self.result = "away-pk"
+                else:
+                    i = 0
+                    while True:
+                        if home_pk_players[(i+5)%10].shooting - away_gk.main_rate + np.random.normal(30, 10) > 0:
+                            self.home_pk_goal += 1
+                        if away_pk_players[(i+5)%10].shooting - home_gk.main_rate + np.random.normal(30, 10) > 0:
+                            self.away_pk_goal += 1
+                        
+                        if self.home_pk_goal > self.away_pk_goal:
+                            self.result = "home-pk"
+                            break
+                        elif self.home_pk_goal < self.away_pk_goal:
+                            self.result = "away-pk"
+                            break
+                        
+                        i+=1
+        else:
+            self.result = "row"
+        
+        # クリーンシート
+        if self.away_goal == 0:
+            for t in self.home.formation.players_flat:
+                t.get_cs(self.competition_name)
+        if self.home_goal == 0:
+            for t in self.away.formation.players_flat:
+                t.get_cs(self.competition_name)
+        
+        # 怪我
+        for p in self.home.formation.players_flat:
+            if p.injury_possibility>np.random.rand():
+                p.injury=np.int8(np.round(np.random.normal(5, 5) + 3))
+        
+        for p in self.away.formation.players_flat:
+            if p.injury_possibility>np.random.rand():
+                p.injury=np.int8(np.round(np.random.normal(5, 5) + 3))
+
+class League:
+    def __init__(self, name, teams, num, category, relegation_num=0, promotion_num=0):
+        self.name = name
+        self.teams = teams
+        self.num = num
+        self.category = category
+        self.team_result = {}
+        self.player_result = {}
+        self.champion = pd.DataFrame(columns=["優勝", "得点王"])
+        
+        self.relegation = {}
+        self.relegation_num = relegation_num
+        self.promotion = {}
+        self.promotion_num = promotion_num
+
+        self.set_team_leaguename()
+    
+    def set_team_leaguename(self):
+        for t in self.teams:
+            t.league_name = self.name
+    
+    def set_player_result(self, competition_name, year, kind):
+        for t in self.teams:
+            for p in t.affilation_players:
+                p.result[competition_name] = {}
+                p.result[competition_name]["goal"] = 0
+                p.result[competition_name]["assist"] = 0
+                p.result[competition_name]["CS"] = 0
+                p.result[competition_name]["試合数"] = 0
+                p.result[competition_name]["年度"] = year
+                p.result[competition_name]["分類"] = kind
+                p.result[competition_name]["年齢"] = p.age
+    
+    def set_team_result(self, season_name):
+        all_team_name = [s.name for s in self.teams]
+        output = pd.DataFrame(np.zeros((len(all_team_name), 5)), 
+                              index=all_team_name, 
+                              columns=["win", "lose", "row", "得点", "失点"], 
+                              dtype=np.int8)
+        self.team_result[season_name] = output
+    
+    def cal_1year_result(self, year):
+        season_name = f'{self.name}_{year}'
+        
+        self.team_result[season_name]["得失点差"] = self.team_result[season_name]["得点"]-self.team_result[season_name]["失点"]
+        self.team_result[season_name]["Points"] = self.team_result[season_name].apply(apply_points, axis=1)
+        self.team_result[season_name] = self.team_result[season_name].sort_values("Points", ascending=False)
+        self.team_result[season_name]["順位"] = [f"{i}位" for i in range(1, 21)]
+        self.team_result[season_name]["リーグ名"] = [f"{self.name}" for i in range(20)]
+        
+        for team in self.teams:
+            team.result.loc[season_name] = self.team_result[season_name].loc[team.name, :]
+        
+        self.champion.loc[season_name, "優勝"] = list(self.team_result[season_name].index)[0]
+        
+        # 昇格決定
+        if self.category!="top":
+            self.promotion[season_name] = list(self.team_result[season_name][:self.promotion_num].index)
+        
+        #降格決定
+        if self.category!="lowest":
+            self.relegation[season_name] = list(self.team_result[season_name][-self.relegation_num:].index)
+        
+    def play_1section(self, year, sections):
+        season_name = f'{self.name}_{year}'
+        
+        for section in sections:
+            # 怪我を一つ進める
+            for p in self.teams[section[0]-1].affilation_players:
+                if p.injury>0:
+                    p.injury -= 1
+            for p in self.teams[section[1]-1].affilation_players:
+                if p.injury>0:
+                    p.injury -= 1
+
+            # スターティングメンバーを作る
+            self.teams[section[0]-1].set_affilation_players_rate()
+            self.teams[section[0]-1].set_onfield_players()
+            self.teams[section[0]-1].formation.cal_team_rate()
+            self.teams[section[1]-1].set_affilation_players_rate()
+            self.teams[section[1]-1].set_onfield_players()
+            self.teams[section[1]-1].formation.cal_team_rate()
+            
+
+            game = Game(home=self.teams[section[0]-1], 
+                        away=self.teams[section[1]-1], 
+                        competition_name=season_name,
+                        moment_num=9,
+                        random_std=15)
+            game.battle()
+
+            home_team_name = self.teams[section[0]-1].name
+            away_team_name = self.teams[section[1]-1].name
+
+            if game.result=="home":
+                self.team_result[season_name].loc[home_team_name, "win"] += 1
+                self.team_result[season_name].loc[away_team_name, "lose"] += 1
+            elif game.result=="away":
+                self.team_result[season_name].loc[away_team_name, "win"] += 1
+                self.team_result[season_name].loc[home_team_name, "lose"] += 1
+            else:
+                self.team_result[season_name].loc[home_team_name, "row"] += 1
+                self.team_result[season_name].loc[away_team_name, "row"] += 1
+
+            self.team_result[season_name].loc[home_team_name, "得点"] += game.home_goal
+            self.team_result[season_name].loc[home_team_name, "失点"] += game.away_goal
+
+            self.team_result[season_name].loc[away_team_name, "得点"] += game.away_goal
+            self.team_result[season_name].loc[away_team_name, "失点"] += game.home_goal
+
+class Competition:
+    def __init__(self, name):
+        self.name = name
+        self.now_round = 1
+        self.section_interval = 0
+        self.max_round = None
+    
+    def set_max_round(self, num_teams, num_section):
+        for max_round in range(N):
+            if num_teams < pow(2, max_round):
+                break
+        self.max_round = max_round
+        self.section_interval = num_section//self.max_round
+
+class ProSoccerLeague:
+    def __init__(self, name, leagues):
+        self.name = name
+        self.leagues = leagues
+
+        self.players_result = pd.DataFrame(columns=["名前", "年齢", "uuid", "ポジション", "リーグ", "分類", "年度", "チーム", "試合数", "goal", "assist", "CS"])
+
+        self.competition = None
+        self.competition_teams = None
+        self.competition_result = {}
+        self.competition_result_top = pd.DataFrame(columns=["年度", "優勝", "準優勝"])
+    
+    def set_competition(self, competition_name, year, num_section):
+        self.competition_teams=[]
+
+        for l in self.leagues:
+            self.competition_teams.extend(l.teams)
+            l.set_player_result(competition_name, year, "カップ戦")
+        
+        self.competition.set_max_round(len(self.competition_teams), num_section)
+        random.shuffle(self.competition_teams)
+        output = pd.DataFrame(columns=["チームA", "チームB", "勝利", "スコア", "ラウンド"])
+        self.competition_result[competition_name] = output
+    
+    def set_players_partification(self):
+        for l in self.leagues:
+            for t in l.teams:
+                for p in t.affilation_players:
+                    p.partification = 0
+                    p.partification_position = None
+    
+    def cal_players_result(self, year):
+        for l in self.leagues:
+            season_name = f'{l.name}_{year}'
+            for t in l.teams:
+                for p in t.affilation_players:
+                    p.consider_retirement()
+
+                    if p.partification_position is None:
+                        continue
+
+                    df = {}
+                    df[0] = p.result[season_name]
+                    df[1] = p.result[self.competition.name]
+                    df = pd.DataFrame(df.values(), index=df.keys())
+                    df["名前"] = p.name
+                    df["uuid"] = p.uuid
+                    df["リーグ"] = l.name
+                    df["チーム"] = t.name
+                    df["ポジション"] = p.partification_position
+                    output = df[["名前", "年齢", "uuid", "ポジション", "リーグ", "分類", "年度", "チーム", "試合数", "goal", "assist", "CS"]]
+                    self.players_result = pd.concat([self.players_result, output])
+        
+        self.players_result = self.players_result.reset_index(drop=True)
+
+        # コンペティション最多得点
+        df_search = self.players_result[((self.players_result["分類"]=="カップ戦")&(self.players_result["年度"]==year))]
+        df_search_index = pd.to_numeric(df_search["goal"]).idxmax()
+        self.competition_result_top.loc[self.competition.name, "得点王"] = f"{df_search.loc[df_search_index, '名前']}({df_search.loc[df_search_index, 'チーム']}({df_search.loc[df_search_index, 'リーグ']}))  /  {df_search.loc[df_search_index, 'goal']}点"
+
+        # リーグ最多得点
+        for l in self.leagues:
+            season_name = f'{l.name}_{year}'
+            df_search = self.players_result[((self.players_result["分類"]=="リーグ")&(self.players_result["年度"]==year)&(self.players_result["リーグ"]==l.name))]
+            df_search_index = pd.to_numeric(df_search["goal"]).idxmax()
+            l.champion.loc[season_name, "得点王"] = f"{df_search.loc[df_search_index, '名前']}({df_search.loc[df_search_index, 'チーム']})  /  {df_search.loc[df_search_index, 'goal']}点"
+        
+
+    
+    def play_1season(self, year, competition):
+        league_calender = create_calender()
+        num_section = len(league_calender)
+        self.competition = competition
+        self.set_competition(self.competition.name, year, num_section)
+        self.set_players_partification()
+        
+        # 必要変数をセッティング
+        for l in self.leagues:
+            l.set_team_leaguename()
+            season_name = f'{l.name}_{year}'
+            l.set_player_result(season_name, year, "リーグ")
+            l.set_team_result(season_name)
+        
+        # 一年play
+        for day in tqdm(range(num_section)):
+            if day==int(self.competition.section_interval*self.competition.now_round):
+                self.play_1competition_section(year)
+            sections = league_calender.iloc[day, :]
+            for league in self.leagues:
+                league.play_1section(year, sections)
+        
+        for l in self.leagues:
+            l.cal_1year_result(year)
+        
+        self.cal_players_result(year)
+        
+        for index in range(len(self.leagues)):
+            season_name = f"{self.leagues[index].name}_{year}"
+            if self.leagues[index].category!="top":
+                promotion = self.leagues[index].promotion[season_name]
+                promotion_team = [t for t in self.leagues[index].teams if t.name in promotion]
+                self.leagues[index].teams = [s for s in self.leagues[index].teams if s not in promotion_team]
+                self.leagues[index-1].teams.extend(promotion_team)
+
+            if self.leagues[index].category!="lowest":
+                relegation = self.leagues[index].relegation[season_name]
+                relegation_team = [t for t in self.leagues[index].teams if t.name in relegation]
+                self.leagues[index].teams = [s for s in self.leagues[index].teams if s not in relegation_team]
+                self.leagues[index+1].teams.extend(relegation_team)
+    
+    def play_1competition_section(self, year):
+        buff_teams = self.competition_teams.copy()
+        if self.competition.now_round==1:
+            self.competition_teams = self.competition_teams[:(len(self.competition_teams)-pow(2, self.competition.max_round-1))*2]
+
+        for i in range(0, len(self.competition_teams), 2):
+            game_team = self.competition_teams[i:i+2]
+            if len(game_team) < 2:
+                continue
+
+            cup_game = Game(home=game_team[0], 
+                            away=game_team[1], 
+                            competition_name=self.competition.name,
+                            moment_num=9,
+                            random_std=20,
+                            pk=1)
+            cup_game.battle()
+            if cup_game.result=="home" or cup_game.result=="home-pk":
+                win = game_team[0]
+                lose = game_team[1]
+            else:
+                win = game_team[1]
+                lose = game_team[0]
+
+            if self.competition.max_round-3 >= self.competition.now_round:
+                round_name = f"{self.competition.now_round}回戦"
+                result_name = f"{self.competition.now_round}回戦"
+            elif self.competition.max_round-2 == self.competition.now_round:
+                round_name = f"準々決勝"
+                result_name = f"ベスト8"
+            elif self.competition.max_round-1 == self.competition.now_round:
+                round_name = f"準決勝"
+                result_name = f"ベスト4"
+            elif self.competition.max_round == self.competition.now_round:
+                round_name = f"決勝"
+                result_name = f"準優勝"
+
+            if "pk" in cup_game.result:
+                score = f"{cup_game.home_goal}-{cup_game.away_goal}(pk:{cup_game.home_pk_goal}-{cup_game.away_pk_goal})"
+            else:
+                score = f"{cup_game.home_goal}-{cup_game.away_goal}"
+
+            output = pd.Series([f"{game_team[0].name}({game_team[0].league_name})", 
+                                f"{game_team[1].name}({game_team[1].league_name})",
+                                win.name, score, round_name], 
+                               index=["チームA", "チームB", "勝利", "スコア", "ラウンド"])
+            self.competition_result[self.competition.name].loc[f"{game_team[0].name}-{game_team[1].name}"] = output
+            lose.competition_result[self.competition.name] = result_name
+            buff_teams.remove(lose)
+        self.competition.now_round += 1
+        self.competition_teams = buff_teams
+        if len(self.competition_teams)<2:
+            win.competition_result[self.competition.name] = "優勝"
+            self.competition_result_top.loc[self.competition.name, ["年度", "優勝", "準優勝"]] = [year, f"{win.name}({win.league_name})", f"{lose.name}({lose.league_name})"]
