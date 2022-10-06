@@ -41,7 +41,7 @@ class FootBaller:
         self.result[season_name]["怪我欠場"] += 1
     
     def consider_retirement(self):
-        rate = 0.00156*self.age*self.age - 1.18 + np.random.normal(0, 0.1) + self.injury_possibility
+        rate = 0.00132*self.age*self.age - 1.18 + np.random.normal(0, 0.1) + self.injury_possibility
         if rate > np.random.rand():
             self.retire = 1
         self.age += 1
@@ -439,11 +439,11 @@ class Game:
         # 怪我
         for p in self.home.formation.players_flat:
             if p.injury_possibility>np.random.rand():
-                p.injury=np.int8(np.round(np.random.normal(5, 5) + 3))
+                p.injury=np.int8(np.round(np.random.normal(5, 2) + 3))
         
         for p in self.away.formation.players_flat:
             if p.injury_possibility>np.random.rand():
-                p.injury=np.int8(np.round(np.random.normal(5, 5) + 3))
+                p.injury=np.int8(np.round(np.random.normal(5, 2) + 3))
 
 class League:
     def __init__(self, name, teams, num, category, relegation_num=0, promotion_num=0, min_rate=75, max_rate=85, mean_rate=80):
@@ -581,7 +581,7 @@ class ProSoccerLeague:
         self.name = name
         self.leagues = leagues
 
-        self.players_result = pd.DataFrame(columns=["名前", "年齢", "uuid", "ポジション", "リーグ", "分類", "年度", "チーム", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"])
+        self.players_result = pd.DataFrame(columns=["名前", "年齢", "uuid", "ポジション", "リーグ", "分類", "年度", "チーム", "順位", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"])
 
         self.competition = None
         self.competition_teams = None
@@ -613,6 +613,7 @@ class ProSoccerLeague:
     def cal_players_result(self, year):
         for l in self.leagues:
             season_name = f'{l.name}_{year}'
+            league_rank = l.team_result[season_name].index.tolist()
             for t in l.teams:
                 for p in t.affilation_players:
                     p.consider_retirement()
@@ -627,7 +628,8 @@ class ProSoccerLeague:
                     df["チーム"] = t.name
                     df["ポジション"] = p.partification_position
                     df["賞"] = ""
-                    output = df[["名前", "年齢", "uuid", "ポジション", "リーグ", "分類", "年度", "チーム", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"]]
+                    df["順位"] = league_rank.index(t.name)
+                    output = df[["名前", "年齢", "uuid", "ポジション", "リーグ", "分類", "年度", "チーム", "順位", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"]]
                     self.players_result = pd.concat([self.players_result, output])
 
                     p.contract -= 1
@@ -647,7 +649,7 @@ class ProSoccerLeague:
         # コンペティション最多得点
         df_search = self.players_result[((self.players_result["分類"]=="カップ戦")&(self.players_result["年度"]==year))]
         df_search_index = pd.to_numeric(df_search["goal"]).idxmax()
-        self.players_result.loc[df_search_index, "賞"] = f"得点王({self.competition.name})"
+        self.players_result.loc[df_search_index, "賞"] += f"得点王({self.competition.name}), "
         self.competition_result_top.loc[self.competition.name, "得点王"] = f"{df_search.loc[df_search_index, '名前']}({df_search.loc[df_search_index, 'チーム']}({df_search.loc[df_search_index, 'リーグ']}))  /  {df_search.loc[df_search_index, 'goal']}点"
 
         # リーグ最多得点
@@ -655,7 +657,7 @@ class ProSoccerLeague:
             season_name = f'{l.name}_{year}'
             df_search = self.players_result[((self.players_result["分類"]=="リーグ")&(self.players_result["年度"]==year)&(self.players_result["リーグ"]==l.name))]
             df_search_index = pd.to_numeric(df_search["goal"]).idxmax()
-            self.players_result.loc[df_search_index, "賞"] = f"得点王({season_name})"
+            self.players_result.loc[df_search_index, "賞"] += f"得点王({season_name}), "
             l.champion.loc[season_name, "得点王"] = f"{df_search.loc[df_search_index, '名前']}({df_search.loc[df_search_index, 'チーム']})  /  {df_search.loc[df_search_index, 'goal']}点"
         
 
