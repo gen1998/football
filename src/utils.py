@@ -35,3 +35,22 @@ def create_calender(num=20, reverse=False):
     output = output.reset_index(drop=True)
     
     return output
+
+def create_empty_position(dict_pos, players):
+    for p in players:
+        pos = p.main_position
+        if pos == "LW":
+            pos = "RW"
+        elif pos == "LM":
+            pos = "RM"
+        elif pos == "CF":
+            pos = "CAM"
+        elif pos == "LB" or pos == "LWB" or pos == "RWB":
+            pos = "RB"
+
+        if pos not in dict_pos.keys():
+            dict_pos[pos] = 1
+        else:
+            dict_pos[pos] += 1
+    
+    return dict_pos

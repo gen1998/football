@@ -10,6 +10,35 @@ from src.object import *
 from config.formation import *
 from config.config import *
 
+
+def random_create_formation():
+    random_int = np.random.randint(1, N)
+    formation_name = list(FORMATION_DICT.keys())[random_int%len(FORMATION_DICT.keys())]
+    select_foramtion = FORMATION_DICT[formation_name]
+    
+    output = Formation(name=select_foramtion["name"],
+                       formation=select_foramtion["formation"],
+                       formation_priority=select_foramtion['formation_priority'],
+                       formation_num=select_foramtion['formation_num'],
+                       formation_assist_rate=select_foramtion['formation_assist_rate'],
+                       formation_shooting_rate=select_foramtion['formation_shooting_rate'])
+    return output
+
+"""
+def change_players(team, df_name_list):
+    retire_player = [p for p in team.affilation_players if p.retire==1]
+    
+    num_gk = len([p for p in retire_player if p.main_position=="GK"])
+    num_fieldplayer = len(retire_player) - num_gk
+    
+    # チームから外す あとあとそれぞれの人間についてチームから外す操作を付け加えたい
+    team.affilation_players = [p for p in team.affilation_players if p not in retire_player]
+    
+    new_players = random_create_players(num_fieldplayer, num_gk, team.min_rate, team.max_rate+15, df_name_list, 20)
+    
+    team.affilation_players.extend(new_players)
+
+
 def random_create_players(num_fieldplayer, num_gk, min_rate, max_rate, df_name_list, age_mean=27):
     players = []
     count = 0
@@ -76,30 +105,4 @@ def random_create_players(num_fieldplayer, num_gk, min_rate, max_rate, df_name_l
         count += 1
     
     return players
-
-
-def random_create_formation():
-    random_int = np.random.randint(1, N)
-    formation_name = list(FORMATION_DICT.keys())[random_int%len(FORMATION_DICT.keys())]
-    select_foramtion = FORMATION_DICT[formation_name]
-    
-    output = Formation(name=select_foramtion["name"],
-                       formation=select_foramtion["formation"],
-                       formation_priority=select_foramtion['formation_priority'],
-                       formation_num=select_foramtion['formation_num'],
-                       formation_assist_rate=select_foramtion['formation_assist_rate'],
-                       formation_shooting_rate=select_foramtion['formation_shooting_rate'])
-    return output
-
-def change_players(team, df_name_list):
-    retire_player = [p for p in team.affilation_players if p.retire==1]
-    
-    num_gk = len([p for p in retire_player if p.main_position=="GK"])
-    num_fieldplayer = len(retire_player) - num_gk
-    
-    # チームから外す あとあとそれぞれの人間についてチームから外す操作を付け加えたい
-    team.affilation_players = [p for p in team.affilation_players if p not in retire_player]
-    
-    new_players = random_create_players(num_fieldplayer, num_gk, team.min_rate, team.max_rate+15, df_name_list, 20)
-    
-    team.affilation_players.extend(new_players)
+"""

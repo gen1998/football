@@ -21,6 +21,7 @@ class FootBaller:
         self.injury = 0
         self.injury_possibility = injury_possibility
         self.retire = 0
+        self.contract = 0
         self.uuid = uuid.uuid1()
         self.result = {}
     
@@ -36,11 +37,17 @@ class FootBaller:
     def get_cs(self, season_name):
         self.result[season_name]["CS"] += 1
     
+    def get_default(self, season_name):
+        self.result[season_name]["怪我欠場"] += 1
+    
     def consider_retirement(self):
         rate = 0.00156*self.age*self.age - 1.18 + np.random.normal(0, 0.1) + self.injury_possibility
         if rate > np.random.rand():
             self.retire = 1
         self.age += 1
+
+    def set_contract(self):
+        self.contract = min(max(np.int8(np.round(np.random.normal((40 - self.age)/5, 0.5))), 1), 7)
 
 class FieldPlayer(FootBaller):
     def __init__(self, name, age, position, pace, shooting, 
@@ -63,7 +70,7 @@ class FieldPlayer(FootBaller):
         if position=='ST':
             pac, sho, pas, dri, de, phy = 0.10, 0.80, 0.00, 0.03, 0.00, 0.10
         if position=='CAM' or position=='CF':
-            pac, sho, pas, dri, de, phy = 0.10, 0.30, 0.38, 0.20, 0.00, 0.05
+            pac, sho, pas, dri, de, phy = 0.10, 0.20, 0.38, 0.30, 0.00, 0.05
         if position=='CM':
             pac, sho, pas, dri, de, phy = 0.05, 0.05, 0.58, 0.20, 0.10, 0.05
         if position=='CDM':
@@ -256,6 +263,9 @@ class Team:
         self.competition_result = {}
         self.affilation_players = None
         self.league_name = None
+
+        self.retire_players = []
+        self.empty_position = {}
     
     def set_affilation_players_rate(self):
         #output = pd.DataFrame([p.position_all_rate for p in self.affilation_players if p.main_position!="GK"])
@@ -436,11 +446,15 @@ class Game:
                 p.injury=np.int8(np.round(np.random.normal(5, 5) + 3))
 
 class League:
-    def __init__(self, name, teams, num, category, relegation_num=0, promotion_num=0):
+    def __init__(self, name, teams, num, category, relegation_num=0, promotion_num=0, min_rate=75, max_rate=85, mean_rate=80):
         self.name = name
         self.teams = teams
         self.num = num
         self.category = category
+        self.min_rate = min_rate
+        self.max_rate = max_rate
+        self.mean_rate = mean_rate
+
         self.team_result = {}
         self.player_result = {}
         self.champion = pd.DataFrame(columns=["優勝", "得点王"])
@@ -467,6 +481,7 @@ class League:
                 p.result[competition_name]["年度"] = year
                 p.result[competition_name]["分類"] = kind
                 p.result[competition_name]["年齢"] = p.age
+                p.result[competition_name]["怪我欠場"] = 0
     
     def set_team_result(self, season_name):
         all_team_name = [s.name for s in self.teams]
@@ -506,9 +521,11 @@ class League:
             for p in self.teams[section[0]-1].affilation_players:
                 if p.injury>0:
                     p.injury -= 1
+                    p.get_default(season_name)
             for p in self.teams[section[1]-1].affilation_players:
                 if p.injury>0:
                     p.injury -= 1
+                    p.get_default(season_name)
 
             # スターティングメンバーを作る
             self.teams[section[0]-1].set_affilation_players_rate()
@@ -564,12 +581,15 @@ class ProSoccerLeague:
         self.name = name
         self.leagues = leagues
 
-        self.players_result = pd.DataFrame(columns=["名前", "年齢", "uuid", "ポジション", "リーグ", "分類", "年度", "チーム", "試合数", "goal", "assist", "CS"])
+        self.players_result = pd.DataFrame(columns=["名前", "年齢", "uuid", "ポジション", "リーグ", "分類", "年度", "チーム", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"])
 
         self.competition = None
         self.competition_teams = None
         self.competition_result = {}
         self.competition_result_top = pd.DataFrame(columns=["年度", "優勝", "準優勝"])
+
+        self.retire_players = []
+        self.free_players = []
     
     def set_competition(self, competition_name, year, num_section):
         self.competition_teams=[]
@@ -597,9 +617,6 @@ class ProSoccerLeague:
                 for p in t.affilation_players:
                     p.consider_retirement()
 
-                    if p.partification_position is None:
-                        continue
-
                     df = {}
                     df[0] = p.result[season_name]
                     df[1] = p.result[self.competition.name]
@@ -609,14 +626,28 @@ class ProSoccerLeague:
                     df["リーグ"] = l.name
                     df["チーム"] = t.name
                     df["ポジション"] = p.partification_position
-                    output = df[["名前", "年齢", "uuid", "ポジション", "リーグ", "分類", "年度", "チーム", "試合数", "goal", "assist", "CS"]]
+                    df["賞"] = ""
+                    output = df[["名前", "年齢", "uuid", "ポジション", "リーグ", "分類", "年度", "チーム", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"]]
                     self.players_result = pd.concat([self.players_result, output])
+
+                    p.contract -= 1
+
+                    # 再契約する処理
+                    if p.contract == 0 and p.partification_position is None:
+                        if np.random.rand()<0.3:
+                            p.set_contract()
+                    
+                    # 試合に出てない人を戦力外にする処理
+                    if p.partification_position is None:
+                        if p.contract<3 and np.random.rand()<0.5:
+                            p.contract = 0
         
         self.players_result = self.players_result.reset_index(drop=True)
 
         # コンペティション最多得点
         df_search = self.players_result[((self.players_result["分類"]=="カップ戦")&(self.players_result["年度"]==year))]
         df_search_index = pd.to_numeric(df_search["goal"]).idxmax()
+        self.players_result.loc[df_search_index, "賞"] = f"得点王({self.competition.name})"
         self.competition_result_top.loc[self.competition.name, "得点王"] = f"{df_search.loc[df_search_index, '名前']}({df_search.loc[df_search_index, 'チーム']}({df_search.loc[df_search_index, 'リーグ']}))  /  {df_search.loc[df_search_index, 'goal']}点"
 
         # リーグ最多得点
@@ -624,6 +655,7 @@ class ProSoccerLeague:
             season_name = f'{l.name}_{year}'
             df_search = self.players_result[((self.players_result["分類"]=="リーグ")&(self.players_result["年度"]==year)&(self.players_result["リーグ"]==l.name))]
             df_search_index = pd.to_numeric(df_search["goal"]).idxmax()
+            self.players_result.loc[df_search_index, "賞"] = f"得点王({season_name})"
             l.champion.loc[season_name, "得点王"] = f"{df_search.loc[df_search_index, '名前']}({df_search.loc[df_search_index, 'チーム']})  /  {df_search.loc[df_search_index, 'goal']}点"
         
 
@@ -654,6 +686,7 @@ class ProSoccerLeague:
             l.cal_1year_result(year)
         
         self.cal_players_result(year)
+        #print("self.players_result", self.players_result)
         
         for index in range(len(self.leagues)):
             season_name = f"{self.leagues[index].name}_{year}"
@@ -668,7 +701,68 @@ class ProSoccerLeague:
                 relegation_team = [t for t in self.leagues[index].teams if t.name in relegation]
                 self.leagues[index].teams = [s for s in self.leagues[index].teams if s not in relegation_team]
                 self.leagues[index+1].teams.extend(relegation_team)
+            
+        #print("self.players_result", self.players_result)
     
+    def play_offseason(self, df_name_list):
+        # フリー契約の人
+        if len(self.free_players) > 0:
+            for p in self.free_players:
+                p.consider_retirement()
+            retire_player = [p for p in self.free_players if p.retire==1]
+            self.retire_players.extend(retire_player)
+            self.retire_players = [p for p in self.retire_players if p not in retire_player]
+
+        # 引退と契約切れを行う
+        for l in self.leagues:
+            for t in l.teams:
+                # 引退
+                retire_player = [p for p in t.affilation_players if p.retire==1]
+                self.retire_players.extend(retire_player)
+                t.affilation_players = [p for p in t.affilation_players if p not in retire_player]
+
+                # 契約切れ
+                free_players = [p for p in t.affilation_players if p.contract==0]
+                self.free_players.extend(free_players)
+                t.affilation_players = [p for p in t.affilation_players if p not in free_players]
+
+                empty_players_pos = {}
+                empty_players_pos = create_empty_position(empty_players_pos, retire_player)
+                empty_players_pos = create_empty_position(empty_players_pos, free_players)
+                t.empty_position = empty_players_pos
+        
+        random.shuffle(self.free_players)
+        
+        for l in self.leagues:
+            for t in random.sample(l.teams, len(l.teams)):
+                # 移籍市場から選手を入団させる
+                for pos in ALL_POSITON_LOW_GK:
+                    if pos not in t.empty_position.keys():
+                        continue
+                    num = t.empty_position[pos]
+                    new_players = [p for p in self.free_players if p.main_position in POSITION_LOW_DICT[pos] and p.main_rate>=l.min_rate and p.main_rate<=l.max_rate]
+                    if len(new_players) >= num:
+                        new_players = new_players[:num]
+                        t.empty_position.pop(pos)
+                    else:
+                        t.empty_position[pos] -= len(new_players)
+                    for p in new_players:
+                        p.set_contract()
+                        #print(p.main_position)
+
+                    t.affilation_players.extend(new_players)
+                    self.free_players = [p for p in self.free_players if p not in new_players]
+
+                # 新しく選手を作成する
+                Cp = Create_player(position_num=t.empty_position, 
+                                    min_rate=l.min_rate, max_rate=l.max_rate, 
+                                    age_mean=20,
+                                    mean_rate=l.mean_rate,
+                                    df_name_list=df_name_list)
+                Cp.create_teams()
+                new_players = Cp.players
+                t.affilation_players.extend(new_players)
+                    
     def play_1competition_section(self, year):
         buff_teams = self.competition_teams.copy()
         if self.competition.now_round==1:
@@ -678,6 +772,24 @@ class ProSoccerLeague:
             game_team = self.competition_teams[i:i+2]
             if len(game_team) < 2:
                 continue
+
+            # 怪我を一つ進める
+            for p in game_team[0].affilation_players:
+                if p.injury>0:
+                    p.injury -= 1
+                    p.get_default(self.competition.name)
+            for p in game_team[1].affilation_players:
+                if p.injury>0:
+                    p.injury -= 1
+                    p.get_default(self.competition.name)
+            
+            # スターティングメンバーを作る
+            game_team[0].set_affilation_players_rate()
+            game_team[0].set_onfield_players()
+            game_team[0].formation.cal_team_rate()
+            game_team[1].set_affilation_players_rate()
+            game_team[1].set_onfield_players()
+            game_team[1].formation.cal_team_rate()
 
             cup_game = Game(home=game_team[0], 
                             away=game_team[1], 
@@ -723,3 +835,176 @@ class ProSoccerLeague:
         if len(self.competition_teams)<2:
             win.competition_result[self.competition.name] = "優勝"
             self.competition_result_top.loc[self.competition.name, ["年度", "優勝", "準優勝"]] = [year, f"{win.name}({win.league_name})", f"{lose.name}({lose.league_name})"]
+
+class Create_player:
+    def __init__(self, position_num, min_rate, max_rate, age_mean, df_name_list, mean_rate=75):
+        self.position_num = position_num
+        self.min_rate = min_rate
+        self.max_rate = max_rate
+        self.df_name_list = df_name_list
+        
+        self.age_mean = age_mean
+        self.players = []
+        
+        # buff zone
+        self.pac = 0
+        self.sho = 0
+        self.pas = 0
+        self.dri = 0
+        self.de = 0
+        self.phy = 0
+        self.main_value = mean_rate
+    
+    def create_teams(self):
+        for pos in ALL_POSITON_LOW:
+            if pos not in self.position_num.keys():
+                continue
+            num = self.position_num[pos]
+            count = 0
+            while True:
+                self.create_player(pos)
+                age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 4))), 18), 37)
+                injury_possibility = np.random.normal(0.03, 0.02) + max((self.pac-85)*0.005, 0)
+
+                A = FieldPlayer(age=age, name=random.choice(self.df_name_list), position=None,
+                            pace=self.pac, shooting=self.sho, passing=self.pas,
+                            dribbling=self.dri, defending=self.de, physicality=self.phy,
+                            injury_possibility=injury_possibility)
+
+                A.select_main_position()
+                if A.main_rate<self.min_rate or A.main_rate>self.max_rate:
+                    continue
+
+                A.cal_all_rate()
+                A.set_contract()
+                count += 1
+                self.players.append(A)
+                if count >= num:
+                    break
+        
+        count = 0
+        while True:
+            if "GK" not in self.position_num.keys():
+                break
+            if count>=self.position_num["GK"]:
+                break
+
+            age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 4))), 18), 37)
+            div = np.int8(np.round(np.random.normal(70, 10)))
+            han = np.int8(np.round(np.random.normal(div, 5)))
+            kic = np.int8(np.round(np.random.normal(60, 10)))
+            ref = np.int8(np.round(np.random.normal(div, 5)))
+            spe = np.int8(np.round(np.random.normal(60, 15)))
+            pos = np.int8(np.round(np.random.normal(div, 5)))
+
+            if div>99 or han>99 or kic>99 or ref>99 or spe>99 or pos>99:
+                continue
+
+            A = GK(name=random.choice(self.df_name_list), age=age, position="GK",
+                   diving=div, handling=han, kicking=kic,
+                   reflexes=ref, speed=spe, positioning=pos)
+
+            A.cal_rate()
+            A.cal_all_rate()
+            A.set_contract()
+
+            if A.main_rate<self.min_rate or A.main_rate>self.max_rate:
+                continue
+
+            self.players.append(A)
+            count += 1
+
+    def create_player(self, pos):
+        while True:
+            if pos == "ST":
+                if np.random.normal(0, 1) > 0:
+                    self.pac = np.int8(np.round(np.random.normal(self.main_value, 5)))
+                    self.sho = np.int8(np.round(np.random.normal(self.pac, 5)))
+                    self.pas = np.int8(np.round(np.random.normal(60, 7)))
+                    self.dri = np.int8(np.round(np.random.normal(self.pac-5, 5)))
+                    self.de = np.int8(np.round(np.random.normal(30, 5)))
+                    self.phy = np.int8(np.round(np.random.normal(60, 7)))
+                else:
+                    self.pac = np.int8(np.round(np.random.normal(60, 7)))
+                    self.sho = np.int8(np.round(np.random.normal(self.main_value, 5)))
+                    self.pas = np.int8(np.round(np.random.normal(60, 7)))
+                    self.dri = np.int8(np.round(np.random.normal(self.sho-5, 5)))
+                    self.de = np.int8(np.round(np.random.normal(30, 5)))
+                    self.phy = np.int8(np.round(np.random.normal(self.sho, 5)))
+            
+            elif pos == "RW":
+                if np.random.normal(0, 1) > 0:
+                    self.pac = np.int8(np.round(np.random.normal(70, 7)))
+                    self.sho = np.int8(np.round(np.random.normal(60, 7)))
+                    self.pas = np.int8(np.round(np.random.normal(self.pac-5, 5)))
+                    self.dri = np.int8(np.round(np.random.normal(self.pac, 5)))
+                    self.de = np.int8(np.round(np.random.normal(30, 5)))
+                    self.phy = np.int8(np.round(np.random.normal(50, 7)))
+                else:
+                    self.pac = np.int8(np.round(np.random.normal(60, 7)))
+                    self.dri = np.int8(np.round(np.random.normal(self.main_value, 5)))
+                    self.sho = np.int8(np.round(np.random.normal(self.dri, 5)))
+                    self.pas = np.int8(np.round(np.random.normal(self.dri-5, 5)))
+                    self.de = np.int8(np.round(np.random.normal(30, 5)))
+                    self.phy = np.int8(np.round(np.random.normal(50, 5)))
+            
+            elif pos == "RM":
+                self.pac = np.int8(np.round(np.random.normal(70, 7)))
+                self.sho = np.int8(np.round(np.random.normal(60, 7)))
+                self.pas = np.int8(np.round(np.random.normal(self.pac, 5)))
+                self.dri = np.int8(np.round(np.random.normal(self.pac-5, 5)))
+                self.de = np.int8(np.round(np.random.normal(50, 7)))
+                self.phy = np.int8(np.round(np.random.normal(60, 7)))
+            
+            elif pos == "RB":
+                if np.random.normal(0, 1) > 0:
+                    self.pac = np.int8(np.round(np.random.normal(70, 7)))
+                    self.sho = np.int8(np.round(np.random.normal(50, 7)))
+                    self.de = np.int8(np.round(np.random.normal(60, 7)))
+                    self.pas = np.int8(np.round(np.random.normal(self.de-5, 5)))
+                    self.dri = np.int8(np.round(np.random.normal(self.pas, 5)))
+                    self.phy = np.int8(np.round(np.random.normal(60, 7)))
+                else:
+                    self.pac = np.int8(np.round(np.random.normal(60, 7)))
+                    self.sho = np.int8(np.round(np.random.normal(50, 7)))
+                    self.de = np.int8(np.round(np.random.normal(self.main_value, 5)))
+                    self.pas = np.int8(np.round(np.random.normal(self.de, 5)))
+                    self.dri = np.int8(np.round(np.random.normal(self.de, 5)))
+                    self.phy = np.int8(np.round(np.random.normal(60, 7)))
+
+            elif pos=="CAM":
+                self.pac = np.int8(np.round(np.random.normal(60, 7)))
+                self.sho = np.int8(np.round(np.random.normal(65, 7)))
+                self.pas = np.int8(np.round(np.random.normal(self.main_value, 5)))
+                self.dri = np.int8(np.round(np.random.normal(self.pas, 5)))
+                self.de = np.int8(np.round(np.random.normal(40, 7)))
+                self.phy = np.int8(np.round(np.random.normal(60, 7)))
+            
+            elif pos=="CM":
+                self.pac = np.int8(np.round(np.random.normal(65, 7)))
+                self.sho = np.int8(np.round(np.random.normal(60, 7)))
+                self.pas = np.int8(np.round(np.random.normal(self.main_value, 5)))
+                self.dri = np.int8(np.round(np.random.normal(self.pas, 3)))
+                self.de = np.int8(np.round(np.random.normal(self.pas-5, 3)))
+                self.phy = np.int8(np.round(np.random.normal(self.pas-3, 3)))
+            
+            elif pos=="CDM":
+                self.pac = np.int8(np.round(np.random.normal(60, 7)))
+                self.sho = np.int8(np.round(np.random.normal(55, 7)))
+                self.de = np.int8(np.round(np.random.normal(self.main_value, 5)))
+                self.pas = np.int8(np.round(np.random.normal(self.de-5, 5)))
+                self.dri = np.int8(np.round(np.random.normal(self.pas, 5)))
+                self.phy = np.int8(np.round(np.random.normal(self.de, 5)))
+            
+            elif pos=="CB":
+                self.pac = np.int8(np.round(np.random.normal(70, 7)))
+                self.sho = np.int8(np.round(np.random.normal(40, 7)))
+                self.pas = np.int8(np.round(np.random.normal(60, 7)))
+                self.dri = np.int8(np.round(np.random.normal(60, 7)))
+                self.de = np.int8(np.round(np.random.normal(self.main_value, 5)))
+                self.phy = np.int8(np.round(np.random.normal(self.de, 5)))
+
+            if self.pac>99 or self.de>99 or self.sho>99 or self.pas>99 or self.dri>99 or self.phy>99:
+                continue
+            else:
+                break
