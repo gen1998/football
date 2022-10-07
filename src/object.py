@@ -948,7 +948,6 @@ class ProSoccerLeague:
                 empty_players_pos = create_empty_position(empty_players_pos, retire_player)
                 empty_players_pos = create_empty_position(empty_players_pos, free_players)
                 empty_players_pos = create_empty_position(empty_players_pos, out_players)
-                print("empty_players_pos", empty_players_pos)
                 t.empty_position = empty_players_pos
         
         random.shuffle(self.free_players)
