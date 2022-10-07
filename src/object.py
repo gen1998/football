@@ -833,7 +833,7 @@ class ProSoccerLeague:
                     p.contract -= 1
 
                     # 再契約する処理
-                    if p.contract == 0 and p.partification_position is None:
+                    if p.contract == 0 and p.partification_position is not None:
                         if np.random.rand()<0.3:
                             p.set_contract()
                     
@@ -849,7 +849,6 @@ class ProSoccerLeague:
                     else:
                         p.main_rate = p.cal_rate()
                     p.cal_all_rate()
-                    p.set_contract()
 
                     # 引退
                     p.consider_retirement()
