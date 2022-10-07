@@ -48,9 +48,10 @@ class FootBaller:
         self.result[season_name]["怪我欠場"] += 1
     
     def consider_retirement(self):
-        rate = 0.00132*self.age*self.age - 1.18 + np.random.normal(0, 0.1) + self.injury_possibility
-        if rate > np.random.rand():
-            self.retire = 1
+        if self.retire != 1:
+            rate = 0.00132*self.age*self.age - 1.18 + np.random.normal(0, 0.1) + self.injury_possibility
+            if rate > np.random.rand():
+                self.retire = 1
         self.age += 1
 
     def set_contract(self):
@@ -266,7 +267,22 @@ class FieldPlayer(FootBaller):
         self.passing = min(np.int8(np.round(self.passing_initial+self.passing_exp)), 99)
         self.dribbling = min(np.int8(np.round(self.dribbling_initial+self.dribbling_exp)), 99)
         self.defending = min(np.int8(np.round(self.defending_initial+self.defending_exp)), 99)
-        self.physicality = min(np.int8(np.round(self.physicality_initial+self.physicality_exp)), 99)            
+        self.physicality = min(np.int8(np.round(self.physicality_initial+self.physicality_exp)), 99)
+
+    def down_ability(self, value):
+        self.pace -= value
+        self.shooting -= value
+        self.passing -= value
+        self.dribbling -= value
+        self.defending -= value
+        self.physicality -= value
+
+        self.pace_exp -= value
+        self.shooting_exp -= value
+        self.passing_exp -= value
+        self.dribbling_exp -= value
+        self.defending_exp -= value
+        self.physicality_exp -= value
     
     def print_player_data(self):
         print(self.name, '  Rate:', self.main_rate, '(', self.main_position, ')')
@@ -380,6 +396,21 @@ class GK(FootBaller):
         self.reflexes = min(np.int8(np.round(self.reflexes_initial + self.reflexes_exp)), 99)
         self.speed = min(np.int8(np.round(self.speed_initial + self.speed_exp)), 99)
         self.positioning = min(np.int8(np.round(self.positioning_initial + self.positioning_exp)), 99)
+    
+    def down_ability(self, value):
+        self.diving -= value
+        self.handling -= value
+        self.kicking -= value
+        self.reflexes -= value
+        self.speed -= value
+        self.positioning -= value
+
+        self.diving_initial -= value
+        self.handling_initial -= value
+        self.kicking_initial-= value
+        self.reflexes_initial -= value
+        self.speed_initial -= value
+        self.positioning_initial -= value
 
     def print_player_data(self):
         print(self.name, '  Rate:', self.main_rate, '(', self.main_position, ')')
@@ -644,14 +675,22 @@ class Game:
             for t in self.away.formation.players_flat:
                 t.get_cs(self.competition_name)
         
-        # 怪我
+        # 怪我 F分布で表現
         for p in self.home.formation.players_flat:
             if p.injury_possibility>np.random.rand():
-                p.injury=np.int8(np.round(np.random.normal(5, 2) + 3))
+                p.injury=min(max(np.int8(np.round(np.random.f(100, 5)*3)), 1), 40)
+                if p.injury > 20:
+                    p.down_ability(3)
+                    if p.injury > 30 and p.age > p.grow_old_age_1 and np.random.rand()<0.5:
+                        p.retire = 1
         
         for p in self.away.formation.players_flat:
             if p.injury_possibility>np.random.rand():
-                p.injury=np.int8(np.round(np.random.normal(5, 2) + 3))
+                p.injury=min(max(np.int8(np.round(np.random.f(100, 5)*3)), 1), 40)
+                if p.injury > 20:
+                    p.down_ability(3)
+                    if p.injury > 30 and p.age > p.grow_old_age_1 and np.random.rand()<0.5:
+                        p.retire = 1
 
 class League:
     def __init__(self, name, teams, num, category, relegation_num=0, promotion_num=0, min_rate=75, max_rate=85, mean_rate=80):
@@ -859,6 +898,9 @@ class ProSoccerLeague:
                     else:
                         p.main_rate = p.cal_rate()
                     p.cal_all_rate()
+
+                    # offseason分怪我を経過させる
+                    p.injury = max(p.injury-10, 0)
 
                     # 引退
                     p.consider_retirement()
