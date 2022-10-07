@@ -940,13 +940,15 @@ class ProSoccerLeague:
                 t.affilation_players = [p for p in t.affilation_players if p not in free_players]
 
                 # リーグのレベルにそぐわない選手を契約切れに
-                free_players = [p for p in t.affilation_players if p.main_rate<l.min_rate or p.main_rate>l.max_rate]
-                self.free_players.extend(free_players)
-                t.affilation_players = [p for p in t.affilation_players if p not in free_players]
+                out_players = [p for p in t.affilation_players if p.main_rate<l.min_rate or p.main_rate>l.max_rate]
+                self.free_players.extend(out_players)
+                t.affilation_players = [p for p in t.affilation_players if p not in out_players]
 
                 empty_players_pos = {}
                 empty_players_pos = create_empty_position(empty_players_pos, retire_player)
                 empty_players_pos = create_empty_position(empty_players_pos, free_players)
+                empty_players_pos = create_empty_position(empty_players_pos, out_players)
+                print("empty_players_pos", empty_players_pos)
                 t.empty_position = empty_players_pos
         
         random.shuffle(self.free_players)
