@@ -19,7 +19,8 @@ class FootBaller:
         self.age = age
         self.name = name
         self.grow_min_age = min(max(np.int8(np.round(np.random.normal(24, 0.5))), 22), 26)
-        self.grow_max_age = min(max(np.int8(np.round(np.random.normal(29, 0.5))), 27), 31)
+        self.grow_old_age_1 = min(max(np.int8(np.round(np.random.normal(29, 0.5))), 27), 31)
+        self.grow_old_age_2 = max(np.int8(np.round(np.random.normal(33, 0.5))), 31)
         self.grow_position_type = grow_position_type
 
         self.injury = 0
@@ -166,20 +167,27 @@ class FieldPlayer(FootBaller):
             elif self.grow_type == "grass":
                 grow_game_rate = 0.007
                 grow_year_rate = 0.4
-        elif self.age <= self.grow_max_age:
+        elif self.age <= self.grow_old_age_1:
             if self.grow_type == "general" or self.grow_type == "grass":
                 grow_game_rate = 0.0
                 grow_year_rate = 0.0
             else:
                 grow_game_rate = 0.001
                 grow_year_rate = 0.0
-        else:
+        elif self.age <= self.grow_old_age_2:
             if self.grow_type == "general" or self.grow_type == "genius" or self.grow_type == "grass":
                 grow_game_rate = 0.0
                 grow_year_rate = -1.0
             elif self.grow_type == "legend":
                 grow_game_rate = 0.0
                 grow_year_rate = -1.5
+        else:
+            if self.grow_type == "general" or self.grow_type == "genius" or self.grow_type == "grass":
+                grow_game_rate = 0.0
+                grow_year_rate = -3.0
+            elif self.grow_type == "legend":
+                grow_game_rate = 0.0
+                grow_year_rate = -2.0
 
         if self.grow_position_type == "ST":
             self.shooting_exp += game_num*grow_game_rate + grow_year_rate
@@ -337,26 +345,27 @@ class GK(FootBaller):
             elif self.grow_type == "grass":
                 grow_game_rate = 0.007
                 grow_year_rate = 0.4
-        elif self.age <= self.grow_max_age:
-            if self.grow_type == "general":
+        elif self.age <= self.grow_old_age_1:
+            if self.grow_type == "general" or self.grow_type == "grass":
                 grow_game_rate = 0.0
                 grow_year_rate = 0.0
-            elif self.grow_type == "genius":
+            else:
                 grow_game_rate = 0.001
                 grow_year_rate = 0.0
-            elif self.grow_type == "grass":
-                grow_game_rate = 0.0
-                grow_year_rate = 0.0
-        else:
-            if self.grow_type == "general":
+        elif self.age <= self.grow_old_age_2:
+            if self.grow_type == "general" or self.grow_type == "genius" or self.grow_type == "grass":
                 grow_game_rate = 0.0
                 grow_year_rate = -1.0
-            elif self.grow_type == "genius":
-                grow_game_rate = 0.001
+            elif self.grow_type == "legend":
+                grow_game_rate = 0.0
                 grow_year_rate = -1.5
-            elif self.grow_type == "grass":
+        else:
+            if self.grow_type == "general" or self.grow_type == "genius" or self.grow_type == "grass":
                 grow_game_rate = 0.0
-                grow_year_rate = -1.0
+                grow_year_rate = -3.0
+            elif self.grow_type == "legend":
+                grow_game_rate = 0.0
+                grow_year_rate = -2.0
         
         self.diving_exp += game_num*grow_game_rate + grow_year_rate
         self.handling_exp += game_num*grow_game_rate + grow_year_rate
