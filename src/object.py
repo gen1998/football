@@ -780,7 +780,7 @@ class ProSoccerLeague:
         self.name = name
         self.leagues = leagues
 
-        self.players_result = pd.DataFrame(columns=["名前", "年齢", "Rate", "uuid", "ポジション", "リーグ", "分類", "年度", "チーム", "順位", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"])
+        self.players_result = pd.DataFrame()
 
         self.competition = None
         self.competition_teams = None
@@ -827,7 +827,8 @@ class ProSoccerLeague:
                     df["賞"] = ""
                     df["順位"] = f"{league_rank.index(t.name)+1}位"
                     df["Rate"] = p.main_rate
-                    output = df[["名前", "年齢", "Rate", "uuid", "ポジション", "リーグ", "分類", "年度", "チーム", "順位", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"]]
+                    df["残契約"] = p.contract-1
+                    output = df[["名前", "uuid", "年齢", "Rate", "残契約", "ポジション", "リーグ", "年度", "チーム", "分類", "順位", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"]]
                     self.players_result = pd.concat([self.players_result, output])
 
                     p.contract -= 1
@@ -935,6 +936,11 @@ class ProSoccerLeague:
 
                 # 契約切れ
                 free_players = [p for p in t.affilation_players if p.contract==0]
+                self.free_players.extend(free_players)
+                t.affilation_players = [p for p in t.affilation_players if p not in free_players]
+
+                # リーグのレベルにそぐわない選手を契約切れに
+                free_players = [p for p in t.affilation_players if p.main_rate<l.min_rate or p.main_rate>l.max_rate]
                 self.free_players.extend(free_players)
                 t.affilation_players = [p for p in t.affilation_players if p not in free_players]
 
