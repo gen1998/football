@@ -51,7 +51,7 @@ class FootBaller:
         self.result[season_name]["怪我欠場"] += 1
     
     def consider_retirement(self):
-        if self.retire!=1 or self.main_rate<80:
+        if self.retire!=1 and self.main_rate<80:
             rate = 0.00132*self.age*self.age - 1.18 + np.random.normal(0, 0.1) + self.injury_possibility
             if rate > np.random.rand():
                 self.retire = 1
