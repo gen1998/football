@@ -361,6 +361,9 @@ class GK(FootBaller):
             elif self.grow_type == "grass":
                 grow_game_rate = 0.007
                 grow_year_rate = 0.4
+            elif self.grow_type == "legend":
+                grow_game_rate = 0.04
+                grow_year_rate = 1.5
         elif self.age <= self.grow_old_age_1:
             if self.grow_type == "general" or self.grow_type == "grass":
                 grow_game_rate = 0.0
@@ -1011,6 +1014,7 @@ class ProSoccerLeague:
                         continue
                     num = t.empty_position[pos]
                     new_players = [p for p in self.free_players if p.main_position in POSITION_LOW_DICT[pos] and p.main_rate>=l.min_rate and p.main_rate<=l.max_rate]
+                    new_players = sorted(new_players, lambda x:x.main_rate, reverse=True)
                     if len(new_players) >= num:
                         new_players = new_players[:num]
                         t.empty_position.pop(pos)
