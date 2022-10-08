@@ -987,7 +987,8 @@ class ProSoccerLeague:
                 p.consider_retirement()
             retire_player = [p for p in self.free_players if p.retire==1]
             self.retire_players.extend(retire_player)
-            self.retire_players = [p for p in self.retire_players if p not in retire_player]
+            self.free_players = [p for p in self.free_players if p not in retire_player]
+            print(self.free_players)
 
         # 引退と契約切れを行う
         for l in self.leagues:
@@ -1023,7 +1024,7 @@ class ProSoccerLeague:
                         continue
                     num = t.empty_position[pos]
                     new_players = [p for p in self.free_players if p.main_position in POSITION_LOW_DICT[pos] and p.main_rate>=l.min_rate and p.main_rate<=l.max_rate]
-                    new_players = sorted(new_players, lambda x:x.main_rate, reverse=True)
+                    new_players = sorted(new_players, key=lambda x:x.main_rate, reverse=True)
                     if len(new_players) >= num:
                         new_players = new_players[:num]
                         t.empty_position.pop(pos)
