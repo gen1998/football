@@ -31,6 +31,7 @@ class FootBaller:
         self.result = {}
 
         self.main_rate = None
+        self.free_time = 0
 
         self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[1, 10, 70, 19])[0]
     
@@ -54,9 +55,14 @@ class FootBaller:
             rate = 0.00132*self.age*self.age - 1.18 + np.random.normal(0, 0.1) + self.injury_possibility
             if rate > np.random.rand():
                 self.retire = 1
+        
+        if self.free_time > 1:
+            self.retire = 1
+
         self.age += 1
 
     def set_contract(self):
+        self.free_time = 0
         self.contract = min(max(np.int8(np.round(np.random.normal((40 - self.age)/5, 0.5))), 1), 7)
 
 class FieldPlayer(FootBaller):
@@ -977,6 +983,7 @@ class ProSoccerLeague:
         if len(self.free_players) > 0:
             for p in self.free_players:
                 p.grow_up(0)
+                p.free_time += 1
                 p.consider_retirement()
             retire_player = [p for p in self.free_players if p.retire==1]
             self.retire_players.extend(retire_player)
