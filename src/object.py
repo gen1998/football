@@ -30,6 +30,9 @@ class FootBaller:
         self.uuid = uuid.uuid1()
         self.result = {}
 
+        self.main_rate = None
+        self.free_time = 0
+
         self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[1, 10, 70, 19])[0]
     
     def get_goal(self, season_name):
@@ -48,13 +51,18 @@ class FootBaller:
         self.result[season_name]["怪我欠場"] += 1
     
     def consider_retirement(self):
-        if self.retire != 1:
+        if self.retire!=1 or self.main_rate<80:
             rate = 0.00132*self.age*self.age - 1.18 + np.random.normal(0, 0.1) + self.injury_possibility
             if rate > np.random.rand():
                 self.retire = 1
+        
+        if self.free_time > 1:
+            self.retire = 1
+
         self.age += 1
 
     def set_contract(self):
+        self.free_time = 0
         self.contract = min(max(np.int8(np.round(np.random.normal((40 - self.age)/5, 0.5))), 1), 7)
 
 class FieldPlayer(FootBaller):
@@ -361,6 +369,9 @@ class GK(FootBaller):
             elif self.grow_type == "grass":
                 grow_game_rate = 0.007
                 grow_year_rate = 0.4
+            elif self.grow_type == "legend":
+                grow_game_rate = 0.04
+                grow_year_rate = 1.5
         elif self.age <= self.grow_old_age_1:
             if self.grow_type == "general" or self.grow_type == "grass":
                 grow_game_rate = 0.0
@@ -972,10 +983,12 @@ class ProSoccerLeague:
         if len(self.free_players) > 0:
             for p in self.free_players:
                 p.grow_up(0)
+                p.free_time += 1
                 p.consider_retirement()
             retire_player = [p for p in self.free_players if p.retire==1]
             self.retire_players.extend(retire_player)
-            self.retire_players = [p for p in self.retire_players if p not in retire_player]
+            self.free_players = [p for p in self.free_players if p not in retire_player]
+            print(self.free_players)
 
         # 引退と契約切れを行う
         for l in self.leagues:
@@ -1011,6 +1024,7 @@ class ProSoccerLeague:
                         continue
                     num = t.empty_position[pos]
                     new_players = [p for p in self.free_players if p.main_position in POSITION_LOW_DICT[pos] and p.main_rate>=l.min_rate and p.main_rate<=l.max_rate]
+                    new_players = sorted(new_players, key=lambda x:x.main_rate, reverse=True)
                     if len(new_players) >= num:
                         new_players = new_players[:num]
                         t.empty_position.pop(pos)
