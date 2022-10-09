@@ -15,7 +15,7 @@ from src.apply import *
 from src.utils import *
 
 class FootBaller:
-    def __init__(self, name, age, injury_possibility, grow_position_type):
+    def __init__(self, name, age, now_year, injury_possibility, grow_position_type):
         self.age = age
         self.name = name
         self.grow_min_age = min(max(np.int8(np.round(np.random.normal(24, 0.5))), 22), 26)
@@ -32,7 +32,9 @@ class FootBaller:
 
         self.main_rate = None
         self.free_time = 0
+        self.born_year = now_year-age
 
+        self.grow_exp_dict = {}
         self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[1, 10, 70, 19])[0]
     
     def get_goal(self, season_name):
@@ -66,11 +68,11 @@ class FootBaller:
         self.contract = min(max(np.int8(np.round(np.random.normal((40 - self.age)/5, 0.5))), 1), 7)
 
 class FieldPlayer(FootBaller):
-    def __init__(self, name, age, position, pace, shooting, 
+    def __init__(self, name, age, now_year, position, pace, shooting, 
                  passing, dribbling, defending, physicality, 
                  injury_possibility=0, 
                  grow_position_type=None):
-        super().__init__(name, age, injury_possibility, grow_position_type)
+        super().__init__(name, age, now_year, injury_possibility, grow_position_type)
         self.main_position = position
         self.pace = pace
         self.shooting = shooting
@@ -168,8 +170,8 @@ class FieldPlayer(FootBaller):
                 grow_game_rate = 0.042
                 grow_year_rate = 0.5
             elif self.grow_type == "legend":
-                grow_game_rate = 0.04
-                grow_year_rate = 1.5
+                grow_game_rate = 0.035
+                grow_year_rate = 2.0
             elif self.grow_type == "genius":
                 grow_game_rate = 0.0375
                 grow_year_rate = 1.0
@@ -277,6 +279,11 @@ class FieldPlayer(FootBaller):
         self.defending = min(np.int8(np.round(self.defending_initial+self.defending_exp)), 99)
         self.physicality = min(np.int8(np.round(self.physicality_initial+self.physicality_exp)), 99)
 
+        if self.age == self.grow_min_age:
+            self.grow_exp_dict["max"] = [self.pace_exp, self.shooting_exp, self.passing_exp, self.dribbling_exp, self.defending_exp, self.physicality_exp]
+        elif self.age == self.grow_old_age_2-1:
+            self.grow_exp_dict["down"] = [self.pace_exp, self.shooting_exp, self.passing_exp, self.dribbling_exp, self.defending_exp, self.physicality_exp]
+
     def down_ability(self, value):
         self.pace -= value
         self.shooting -= value
@@ -308,11 +315,11 @@ class FieldPlayer(FootBaller):
         print()
 
 class GK(FootBaller):
-    def __init__(self, name, age, position, diving, 
+    def __init__(self, name, age, now_year, position, diving, 
                  handling, kicking, reflexes, 
                  speed, positioning, injury_possibility=0,
                  grow_position_type=None):
-        super().__init__(name, age, injury_possibility, grow_position_type)
+        super().__init__(name, age, now_year, injury_possibility, grow_position_type)
         self.main_position = position
         self.diving = diving
         self.handling = handling
@@ -364,14 +371,14 @@ class GK(FootBaller):
                 grow_game_rate = 0.042
                 grow_year_rate = 0.5
             elif self.grow_type == "genius":
-                grow_game_rate = 0.04
-                grow_year_rate = 1.5
+                grow_game_rate = 0.0375
+                grow_year_rate = 1.0
             elif self.grow_type == "grass":
                 grow_game_rate = 0.007
                 grow_year_rate = 0.4
             elif self.grow_type == "legend":
-                grow_game_rate = 0.04
-                grow_year_rate = 1.5
+                grow_game_rate = 0.033
+                grow_year_rate = 2.0
         elif self.age <= self.grow_old_age_1:
             if self.grow_type == "general" or self.grow_type == "grass":
                 grow_game_rate = 0.0
@@ -514,7 +521,6 @@ class Team:
         self.affilation_players = None
         self.league_name = None
 
-        self.retire_players = []
         self.empty_position = {}
     
     def set_affilation_players_rate(self):
@@ -978,7 +984,7 @@ class ProSoccerLeague:
             
         #print("self.players_result", self.players_result)
     
-    def play_offseason(self, df_name_list):
+    def play_offseason(self, df_name_list, year):
         # フリー契約の人
         if len(self.free_players) > 0:
             for p in self.free_players:
@@ -988,7 +994,6 @@ class ProSoccerLeague:
             retire_player = [p for p in self.free_players if p.retire==1]
             self.retire_players.extend(retire_player)
             self.free_players = [p for p in self.free_players if p not in retire_player]
-            print(self.free_players)
 
         # 引退と契約切れを行う
         for l in self.leagues:
@@ -1041,6 +1046,7 @@ class ProSoccerLeague:
                 Cp = Create_player(position_num=t.empty_position, 
                                     min_rate=0, max_rate=100, 
                                     age_mean=20,
+                                    now_year=year,
                                     mean_rate=l.mean_rate,
                                     df_name_list=df_name_list)
                 Cp.create_teams(new=True)
@@ -1121,7 +1127,7 @@ class ProSoccerLeague:
             self.competition_result_top.loc[self.competition.name, ["年度", "優勝", "準優勝"]] = [year, f"{win.name}({win.league_name})", f"{lose.name}({lose.league_name})"]
 
 class Create_player:
-    def __init__(self, position_num, min_rate, max_rate, age_mean, df_name_list, mean_rate=75):
+    def __init__(self, position_num, min_rate, max_rate, age_mean, df_name_list, mean_rate=75, now_year=1900):
         self.position_num = position_num
         self.min_rate = min_rate
         self.max_rate = max_rate
@@ -1129,6 +1135,7 @@ class Create_player:
         self.df_name_list = df_name_list
         
         self.age_mean = age_mean
+        self.now_year = now_year
         self.players = []
         
         # buff zone
@@ -1155,7 +1162,7 @@ class Create_player:
                     age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 4))), 18), 37)
                 injury_possibility = np.random.normal(0.03, 0.02) + max((self.pac-85)*0.005, 0)
 
-                A = FieldPlayer(age=18, name=random.choice(self.df_name_list), position=None,
+                A = FieldPlayer(age=18, now_year=self.now_year, name=random.choice(self.df_name_list), position=None,
                                 pace=self.pac, shooting=self.sho, passing=self.pas,
                                 dribbling=self.dri, defending=self.de, physicality=self.phy,
                                 injury_possibility=injury_possibility,
@@ -1194,8 +1201,8 @@ class Create_player:
             if div>99 or han>99 or kic>99 or ref>99 or spe>99 or pos>99:
                 continue
 
-            A = GK(name=random.choice(self.df_name_list), age=18, position="GK",
-                   diving=div, handling=han, kicking=kic,
+            A = GK(name=random.choice(self.df_name_list), age=18, now_year=self.now_year, 
+                   position="GK",diving=div, handling=han, kicking=kic,
                    reflexes=ref, speed=spe, positioning=pos)
             
             for age_ in range(18, age):
