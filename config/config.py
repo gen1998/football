@@ -1,5 +1,5 @@
 ALL_POSITON_LOW = ["ST", "CAM", "RW", "RM", "CM", "CDM", "RB", "CB", "RWB"]
-ALL_POSITON_LOW_GK = ["ST", "CAM", "RW", "RM", "CM", "CDM", "RB", "CB", "RWB", "GK"]
+ALL_POSITON_LOW_GK = ["ST", "CAM", "RW", "RM", "CM", "CDM", "RB", "CB", "GK"]
 ALL_POSITON = ["ST", "CF", "CAM", "RW", "LW", "RM", "LM", "CM", "CDM", "RB", "LB", "CB", "RWB", "LWB"]
 POSITION_LOW_DICT = {"ST" : ["ST", "CF", "CAM"],
                      "CAM" : ["CF", "CAM", "LW", "RW"],
@@ -11,5 +11,6 @@ POSITION_LOW_DICT = {"ST" : ["ST", "CF", "CAM"],
                      "CB" : ["CB", "RB", "LB", "CDM"],
                      "RWB" : ["RB", "LB", "RWB", "LWB", "RM", "LM"],
                      "GK" : ["GK"]}
+GENERAL_POSITION_NUM = {"ST":2, "RW":2, "CAM":2, "RM":2, "CM":4, "CDM":2, "CB":4, "RB":4, "GK":3}
 
 N = 1000000
