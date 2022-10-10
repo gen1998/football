@@ -118,7 +118,7 @@ def print_rate(player):
     for i in range(11):
         plt_hexagon(i/10, i/10, i/10, i/10, i/10, i/10, color="black", alpha=0.2, text=True)
     
-    plt.legend(bbox_to_anchor=(0, 0.5), loc='lower right', fontsize=8)
+    plt.legend(bbox_to_anchor=(0.5, 0), loc='lower right', fontsize=8)
 
 def plt_hexagon(pace, sho, pas, dri, de, phy, color, main_position=None, alpha=1.0, text=True, label=None):
     cx = 1
