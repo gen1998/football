@@ -42,9 +42,9 @@ def print_player(ProLeague, all_member, uuid_):
         if i==len(output)-1:
             result_txt = f'{output.loc[t_i:i, "試合数"].sum()}({output.loc[t_i:i, "goal"].sum()})'
             if t_s == row["年度"]:
-                plt.text(0, 15-count, f"  {t_s}   {t_name_b.ljust(10)} {result_txt}")
+                plt.text(0, 15-count, f"  {t_s}   {t_name.ljust(10)} {result_txt}")
             else:
-                plt.text(0, 15-count, f"  {t_s}-{row['年度']}   {t_name_b.ljust(10)} {result_txt}")
+                plt.text(0, 15-count, f"  {t_s}-{row['年度']}   {t_name.ljust(10)} {result_txt}")
         t_name_b = t_name
 
     plt.subplot(1, 4, 2)
@@ -77,7 +77,7 @@ def print_player(ProLeague, all_member, uuid_):
 
     output = ProLeague.players_result
     output = output[output.uuid==uuid.UUID(f"{uuid_}")]
-    display(output[output["分類"]=="リーグ"])
+    display(output)
 
 def print_rate(player):
     pos = player.main_position
