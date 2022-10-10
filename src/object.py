@@ -167,14 +167,14 @@ class FieldPlayer(FootBaller):
 
         if self.age <= self.grow_min_age:
             if self.grow_type == "general":
-                grow_game_rate = 0.042
-                grow_year_rate = 0.5
+                grow_game_rate = 0.04
+                grow_year_rate = 0.6
             elif self.grow_type == "legend":
                 grow_game_rate = 0.035
                 grow_year_rate = 2.0
             elif self.grow_type == "genius":
-                grow_game_rate = 0.0375
-                grow_year_rate = 1.0
+                grow_game_rate = 0.025
+                grow_year_rate = 1.5
             elif self.grow_type == "grass":
                 grow_game_rate = 0.007
                 grow_year_rate = 0.4
@@ -1177,7 +1177,7 @@ class Create_player:
                                 grow_position_type=grow_position_type)
                 
                 for age_ in range(18, age):
-                    A.grow_up(40)
+                    A.grow_up(min(np.int8(np.random.normal(30, 3)), 40))
                     A.age += 1
 
                 A.select_main_position()
