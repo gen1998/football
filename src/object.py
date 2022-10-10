@@ -902,11 +902,35 @@ class ProSoccerLeague:
                     p.partification_position = None
     
     def cal_players_result(self, year):
+        all_output = pd.DataFrame()
         for l in self.leagues:
             season_name = f'{l.name}_{year}'
             league_rank = l.team_result[season_name].index.tolist()
             for t in l.teams:
                 for p in t.register_players:
+                    season_result = p.result[season_name]
+                    competition_result = p.result[self.competition.name]
+
+                    output = pd.DataFrame({"名前":[p.name, p.name],
+                                "uuid":[p.uuid, p.uuid],
+                                "年齢":[season_result["年齢"], competition_result["年齢"]],
+                                "Rate" : [p.main_rate, p.main_rate],
+                                "残契約":[p.contract-1, p.contract-1],
+                                "ポジション":[p.partification_position, p.partification_position],
+                                "リーグ":[l.name, l.name],
+                                "年度":[season_result["年度"], competition_result["年度"]],
+                                "チーム":[t.name, t.name],
+                                "レンタル元":["", ""],
+                                "分類":[season_result["分類"], competition_result["分類"]],
+                                "順位" :  f"{league_rank.index(t.name)+1}位",
+                                "試合数":[season_result["試合数"], competition_result["試合数"]],
+                                "goal":[season_result["goal"], competition_result["goal"]],
+                                "assist":[season_result["assist"], competition_result["assist"]],
+                                "CS":[season_result["CS"], competition_result["CS"]],
+                                "怪我欠場":[season_result["怪我欠場"], competition_result["怪我欠場"]],
+                                "賞":["", ""]})
+                    all_output = pd.concat([all_output, output])
+                    """
                     df = {}
                     df[0] = p.result[season_name]
                     df[1] = p.result[self.competition.name]
@@ -923,6 +947,7 @@ class ProSoccerLeague:
                     df["レンタル元"] = ""
                     output = df[["名前", "uuid", "年齢", "Rate", "残契約", "ポジション", "リーグ", "年度", "チーム", "レンタル元", "分類", "順位", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"]]
                     self.players_result = pd.concat([self.players_result, output])
+                    """
 
                     p.contract -= 1
 
@@ -937,7 +962,7 @@ class ProSoccerLeague:
                             p.contract = 0
                     
                     # 成長
-                    p.grow_up(df["試合数"].sum())
+                    p.grow_up(season_result["試合数"]+competition_result["試合数"])
                     if p.main_position != "GK":
                         p.select_main_position()
                     else:
@@ -950,6 +975,7 @@ class ProSoccerLeague:
                     # 引退
                     p.consider_retirement()
         
+        self.players_result = pd.concat([self.players_result, all_output])
         self.players_result = self.players_result.reset_index(drop=True)
 
         # コンペティション最多得点
@@ -985,7 +1011,7 @@ class ProSoccerLeague:
             season_name = f'{l.name}_{year}'
             l.set_player_result(season_name, year, "リーグ")
             l.set_team_result(season_name)
-        
+        #s = time.time()
         # 一年play
         for day in tqdm(range(num_section)):
             if day==int(self.competition.section_interval*self.competition.now_round):
@@ -993,18 +1019,25 @@ class ProSoccerLeague:
             sections = league_calender.iloc[day, :]
             for league in self.leagues:
                 league.play_1section(year, sections)
+        #b = time.time()
+        #print("1年play : ", b-s)
         
+        #s = time.time()
         for l in self.leagues:
             l.cal_1year_result(year)
+        #b = time.time()
+        #print("リーグresult : ", b-s)
 
+        #s = time.time()
         # 登録外のメンバーをレンタル先で活躍させる
+        all_output = pd.DataFrame()
         for l in self.leagues:
             for t in l.teams:
                 for p in t.not_register_players:
                     p.contract -= 1
                     p.grow_up(40)
                     df_result = rental_player_result(p, year, t.name)
-                    self.players_result = pd.concat([self.players_result, df_result])
+                    all_output = pd.concat([all_output, df_result])
 
                     if p.main_position != "GK":
                         p.select_main_position()
@@ -1012,10 +1045,18 @@ class ProSoccerLeague:
                         p.main_rate = p.cal_rate()
                     p.cal_all_rate()
                     p.consider_retirement()
+        self.players_result = pd.concat([self.players_result, all_output])
+        self.players_result = self.players_result.reset_index(drop=True)
+        #b = time.time()
+        #print("レンタル : ", b-s)
         
+        #s = time.time()
         self.cal_players_result(year)
         #print("self.players_result", self.players_result)
+        #b = time.time()
+        #print("player result : ", b-s)
         
+        #s = time.time()
         for index in range(len(self.leagues)):
             season_name = f"{self.leagues[index].name}_{year}"
             if self.leagues[index].category!="top":
@@ -1029,6 +1070,8 @@ class ProSoccerLeague:
                 relegation_team = [t for t in self.leagues[index].teams if t.name in relegation]
                 self.leagues[index].teams = [s for s in self.leagues[index].teams if s not in relegation_team]
                 self.leagues[index+1].teams.extend(relegation_team)
+        #b = time.time()
+        #print("昇格降格 : ", b-s)
             
         #print("self.players_result", self.players_result)
     
