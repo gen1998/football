@@ -695,7 +695,7 @@ class Game:
         # 怪我 F分布で表現
         for p in self.home.formation.players_flat:
             if p.injury_possibility>np.random.rand():
-                p.injury=min(max(np.int8(np.round(np.random.f(100, 5)*3)), 1), 40)
+                p.injury=min(max(np.int8(np.round(np.random.f(100, 5)*5)), 1), 40)
                 if p.injury > 20:
                     p.down_ability(3)
                     if p.injury > 30 and p.age > p.grow_old_age_1 and np.random.rand()<0.5:
@@ -703,7 +703,7 @@ class Game:
         
         for p in self.away.formation.players_flat:
             if p.injury_possibility>np.random.rand():
-                p.injury=min(max(np.int8(np.round(np.random.f(100, 5)*3)), 1), 40)
+                p.injury=min(max(np.int8(np.round(np.random.f(100, 5)*5)), 1), 40)
                 if p.injury > 20:
                     p.down_ability(3)
                     if p.injury > 30 and p.age > p.grow_old_age_1 and np.random.rand()<0.5:
@@ -1044,7 +1044,7 @@ class ProSoccerLeague:
 
                 # 新しく選手を作成する
                 Cp = Create_player(position_num=t.empty_position, 
-                                    min_rate=0, max_rate=100, 
+                                    min_rate=30, max_rate=80, 
                                     age_mean=20,
                                     now_year=year,
                                     mean_rate=l.mean_rate,
@@ -1160,7 +1160,7 @@ class Create_player:
                     age = 18
                 else:
                     age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 4))), 18), 37)
-                injury_possibility = np.random.normal(0.03, 0.02) + max((self.pac-85)*0.005, 0)
+                injury_possibility = np.random.normal(0.04, 0.02) + max((self.pac-85)*0.005, 0)
 
                 A = FieldPlayer(age=18, now_year=self.now_year, name=random.choice(self.df_name_list), position=None,
                                 pace=self.pac, shooting=self.sho, passing=self.pas,
