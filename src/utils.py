@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 import random
+import uuid
 
 def create_calender(num=20, reverse=False):
     output = []
@@ -54,3 +55,12 @@ def create_empty_position(dict_pos, players):
             dict_pos[pos] += 1
     
     return dict_pos
+
+def search_player(ProLeague, all_member, uuid_):
+    if all_member[all_member.uuid == uuid.UUID(uuid_)]["進退"].values[0] == "引退":
+        player = [p for p in ProLeague.retire_players if p.uuid == uuid.UUID(uuid_)][0]
+    else:
+        l = [l for l in ProLeague.leagues if l.name==all_member[all_member.uuid == uuid.UUID(uuid_)]["リーグ"].values[0]][0]
+        t = [t for t in l.teams if t.name==all_member[all_member.uuid == uuid.UUID(uuid_)]["チーム"].values[0]][0]
+        player = [p for p in t.affilation_players if p.uuid == uuid.UUID(uuid_)][0]
+    return player
