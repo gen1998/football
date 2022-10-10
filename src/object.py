@@ -1198,6 +1198,8 @@ class Create_player:
             if count>=self.position_num["GK"]:
                 break
 
+            self.main_value = np.int8(np.round(np.random.normal(self.mean_rate, 1)))
+
             age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 4))), 18), 37)
             div = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
             han = np.int8(np.round(np.random.normal(div, 1)))
