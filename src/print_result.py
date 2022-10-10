@@ -77,6 +77,7 @@ def print_player(ProLeague, all_member, uuid_):
 
     output = ProLeague.players_result
     output = output[output.uuid==uuid.UUID(f"{uuid_}")]
+    output = output[output["分類"]!="カップ戦"]
     display(output)
 
 def print_rate(player):
