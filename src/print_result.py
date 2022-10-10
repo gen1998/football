@@ -81,10 +81,11 @@ def print_player(ProLeague, all_member, uuid_):
 
 def print_rate(player):
     pos = player.main_position
-    color_list = ["r", "b"]
-    columns = ["max", "down"]
     
-    for color, cl in zip(color_list[:1], columns[:1]):
+    # 最大値
+    if "max" in player.grow_exp_dict.keys():
+        cl = "max"
+        color = "r"
         pace = np.int8(np.round(player.pace_initial + player.grow_exp_dict[cl][0]))/100
         sho = np.int8(np.round(player.shooting_initial + player.grow_exp_dict[cl][1]))/100
         pas = np.int8(np.round(player.passing_initial + player.grow_exp_dict[cl][2]))/100
@@ -94,6 +95,7 @@ def print_rate(player):
 
         plt_hexagon(pace, sho, pas, dri, de, phy, color, main_position=pos, text=False, label="最大値")
     
+    # 初期値
     pace = np.int8(np.round(player.pace_initial))/100
     sho = np.int8(np.round(player.shooting_initial))/100
     pas = np.int8(np.round(player.passing_initial))/100
@@ -103,6 +105,7 @@ def print_rate(player):
 
     plt_hexagon(pace, sho, pas, dri, de, phy, color="y", main_position=pos, text=False, label="入団値")
     
+    # 現在値
     pace = np.int8(np.round(player.pace_initial + player.pace_exp))/100
     sho = np.int8(np.round(player.shooting_initial + player.shooting_exp))/100
     pas = np.int8(np.round(player.passing_initial + player.passing_exp))/100
