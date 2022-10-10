@@ -31,7 +31,7 @@ def print_player(ProLeague, all_member, uuid_):
             t_s = row["年度"]
             t_i = 0
         if t_name!=t_name_b:
-            result_txt = f'{output.loc[t_i:i, "試合数"].sum()}({output.loc[t_i:i, "goal"].sum()})'
+            result_txt = f'{output.loc[t_i:i-1, "試合数"].sum()}({output.loc[t_i:i-1, "goal"].sum()})'
             if t_s == row["年度"]-1:
                 plt.text(0, 15-count, f"  {t_s}   {t_name_b.ljust(10)} {result_txt}")
             else:
