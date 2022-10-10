@@ -58,7 +58,7 @@ class FootBaller:
             if rate > np.random.rand():
                 self.retire = 1
         
-        if self.free_time > 1:
+        if (self.free_time>1 and self.age>=26) or self.free_time>3:
             self.retire = 1
 
         self.age += 1
@@ -988,9 +988,17 @@ class ProSoccerLeague:
         # フリー契約の人
         if len(self.free_players) > 0:
             for p in self.free_players:
-                p.grow_up(0)
+                if p.age<=25:
+                    p.grow_up(20)
+                    df_result = parctice_player_result(p, year)
+                    self.players_result = pd.concat([self.players_result, df_result])
+                else:
+                    p.grow_up(0)
+                    df_result = self_study_player_result(p, year)
+                    self.players_result = pd.concat([self.players_result, df_result])
                 p.free_time += 1
                 p.consider_retirement()
+            self.players_result = self.players_result.reset_index(drop=True)
             retire_player = [p for p in self.free_players if p.retire==1]
             self.retire_players.extend(retire_player)
             self.free_players = [p for p in self.free_players if p not in retire_player]
