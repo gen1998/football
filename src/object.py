@@ -33,6 +33,7 @@ class FootBaller:
         self.main_rate = None
         self.free_time = 0
         self.born_year = now_year-age
+        self.register = 0
 
         self.grow_exp_dict = {}
         self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[1, 10, 70, 19])[0]
@@ -519,31 +520,56 @@ class Team:
         self.result = pd.DataFrame(columns=['win', 'lose', 'row', '得点', '失点', '得失点差', 'Points', '順位', 'リーグ名'])
         self.competition_result = {}
         self.affilation_players = None
+        self.register_players = None
+        self.not_register_players = None
         self.league_name = None
 
         self.empty_position = {}
+
+    def set_register_players(self):
+        for p in self.affilation_players:
+            p.register = 0
+
+        for pos, num in GENERAL_POSITION_NUM.items():
+            not_register = [p for p in self.affilation_players if p.register==0]
+            not_register = sorted(not_register, key=lambda x:x.position_all_rate[pos], reverse=True)
+            for p in not_register[:num]:
+                p.register = 1
+        
+        self.not_register_players = [p for p in self.affilation_players if p.register==0]
+        self.register_players = [p for p in self.affilation_players if p.register==1]
     
     def set_affilation_players_rate(self):
-        #output = pd.DataFrame([p.position_all_rate for p in self.affilation_players if p.main_position!="GK"])
-        output = pd.DataFrame([p.position_all_rate for p in self.affilation_players])
-        #output["injury"] = [p.injury for p in self.affilation_players if p.main_position!="GK"]
-        output["injury"] = [p.injury for p in self.affilation_players]
+        for p in self.register_players:
+            p.partification = 0
+        """
+        output = pd.DataFrame([p.position_all_rate for p in self.register_players])
+        output["injury"] = [p.injury for p in self.register_players]
         output["partification"] = 0
 
-        #output_gk = pd.DataFrame([p.main_rate for p in self.affilation_players if p.main_position=="GK"], columns=["GK"])
-        #output["injury"] = [p.injury for p in self.affilation_players if i.main_position!="GK"]
-        #output_gk["partification"] = 0
-
         self.affilation_players_all_rate = output
-        #self.affilation_players_gk_rate = output_gk
-
+        """
     
     def set_onfield_players(self):
+        for p in self.register_players:
+            p.partification = 0
+
         self.formation.set_players_position()
         self.formation.players_flat = []
 
         for fp in self.formation.formation_priority:
             select_num = self.formation.formation_num[fp]
+            partification_players = [p for p in self.register_players if p.partification==0 and p.injury<1]
+            partification_players = sorted(partification_players, key=lambda x:x.position_all_rate[fp], reverse=True)
+            partification_players = partification_players[:select_num]
+
+            for p in partification_players:
+                p.partification = 1
+                p.partification_position = fp
+                self.formation.players[fp].append(p)
+                #print(self.formation.players)
+
+            """
             df = self.affilation_players_all_rate[((self.affilation_players_all_rate.partification==0)&(self.affilation_players_all_rate.injury<1))]
             #df = self.affilation_players_all_rate[self.affilation_players_all_rate.injury<1]
             select_index = df.sort_values(fp, ascending=False).index.values[:select_num]
@@ -553,6 +579,7 @@ class Team:
                 self.affilation_players[index].partification = 1
                 self.affilation_players[index].partification_position = fp
                 self.formation.players[fp].append(self.affilation_players[index])
+            """
 
         for fps in self.formation.players.values():
             self.formation.players_flat.extend(fps)
@@ -782,20 +809,20 @@ class League:
         
         for section in sections:
             # 怪我を一つ進める
-            for p in self.teams[section[0]-1].affilation_players:
+            for p in self.teams[section[0]-1].register_players:
                 if p.injury>0:
                     p.injury -= 1
                     p.get_default(season_name)
-            for p in self.teams[section[1]-1].affilation_players:
+            for p in self.teams[section[1]-1].register_players:
                 if p.injury>0:
                     p.injury -= 1
                     p.get_default(season_name)
 
             # スターティングメンバーを作る
-            self.teams[section[0]-1].set_affilation_players_rate()
+            #self.teams[section[0]-1].set_affilation_players_rate()
             self.teams[section[0]-1].set_onfield_players()
             self.teams[section[0]-1].formation.cal_team_rate()
-            self.teams[section[1]-1].set_affilation_players_rate()
+            #self.teams[section[1]-1].set_affilation_players_rate()
             self.teams[section[1]-1].set_onfield_players()
             self.teams[section[1]-1].formation.cal_team_rate()
             
@@ -879,7 +906,7 @@ class ProSoccerLeague:
             season_name = f'{l.name}_{year}'
             league_rank = l.team_result[season_name].index.tolist()
             for t in l.teams:
-                for p in t.affilation_players:
+                for p in t.register_players:
                     df = {}
                     df[0] = p.result[season_name]
                     df[1] = p.result[self.competition.name]
@@ -893,7 +920,8 @@ class ProSoccerLeague:
                     df["順位"] = f"{league_rank.index(t.name)+1}位"
                     df["Rate"] = p.main_rate
                     df["残契約"] = p.contract-1
-                    output = df[["名前", "uuid", "年齢", "Rate", "残契約", "ポジション", "リーグ", "年度", "チーム", "分類", "順位", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"]]
+                    df["レンタル元"] = ""
+                    output = df[["名前", "uuid", "年齢", "Rate", "残契約", "ポジション", "リーグ", "年度", "チーム", "レンタル元", "分類", "順位", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"]]
                     self.players_result = pd.concat([self.players_result, output])
 
                     p.contract -= 1
@@ -937,8 +965,11 @@ class ProSoccerLeague:
             df_search_index = pd.to_numeric(df_search["goal"]).idxmax()
             self.players_result.loc[df_search_index, "賞"] += f"得点王({season_name}), "
             l.champion.loc[season_name, "得点王"] = f"{df_search.loc[df_search_index, '名前']}({df_search.loc[df_search_index, 'チーム']})  /  {df_search.loc[df_search_index, 'goal']}点"
-        
 
+    def set_register_member(self):
+        for l in self.leagues:
+            for t in l.teams:
+                t.set_register_players()
     
     def play_1season(self, year, competition):
         league_calender = create_calender()
@@ -946,6 +977,7 @@ class ProSoccerLeague:
         self.competition = competition
         self.set_competition(self.competition.name, year, num_section)
         self.set_players_partification()
+        self.set_register_member()
         
         # 必要変数をセッティング
         for l in self.leagues:
@@ -964,6 +996,22 @@ class ProSoccerLeague:
         
         for l in self.leagues:
             l.cal_1year_result(year)
+
+        # 登録外のメンバーをレンタル先で活躍させる
+        for l in self.leagues:
+            for t in l.teams:
+                for p in t.not_register_players:
+                    p.contract -= 1
+                    p.grow_up(40)
+                    df_result = rental_player_result(p, year, t.name)
+                    self.players_result = pd.concat([self.players_result, df_result])
+
+                    if p.main_position != "GK":
+                        p.select_main_position()
+                    else:
+                        p.main_rate = p.cal_rate()
+                    p.cal_all_rate()
+                    p.consider_retirement()
         
         self.cal_players_result(year)
         #print("self.players_result", self.players_result)
@@ -996,6 +1044,12 @@ class ProSoccerLeague:
                     p.grow_up(0)
                     df_result = self_study_player_result(p, year)
                     self.players_result = pd.concat([self.players_result, df_result])
+                if p.main_position != "GK":
+                    p.select_main_position()
+                else:
+                    p.main_rate = p.cal_rate()
+                p.cal_all_rate()
+
                 p.free_time += 1
                 p.consider_retirement()
             self.players_result = self.players_result.reset_index(drop=True)
@@ -1017,7 +1071,7 @@ class ProSoccerLeague:
                 t.affilation_players = [p for p in t.affilation_players if p not in free_players]
 
                 # リーグのレベルにそぐわない選手を契約切れに
-                out_players = [p for p in t.affilation_players if p.main_rate<l.min_rate or p.main_rate>l.max_rate]
+                out_players = [p for p in t.affilation_players if p.main_rate>=l.max_rate]
                 self.free_players.extend(out_players)
                 t.affilation_players = [p for p in t.affilation_players if p not in out_players]
 
@@ -1072,20 +1126,20 @@ class ProSoccerLeague:
                 continue
 
             # 怪我を一つ進める
-            for p in game_team[0].affilation_players:
+            for p in game_team[0].register_players:
                 if p.injury>0:
                     p.injury -= 1
                     p.get_default(self.competition.name)
-            for p in game_team[1].affilation_players:
+            for p in game_team[1].register_players:
                 if p.injury>0:
                     p.injury -= 1
                     p.get_default(self.competition.name)
             
             # スターティングメンバーを作る
-            game_team[0].set_affilation_players_rate()
+            #game_team[0].set_affilation_players_rate()
             game_team[0].set_onfield_players()
             game_team[0].formation.cal_team_rate()
-            game_team[1].set_affilation_players_rate()
+            #game_team[1].set_affilation_players_rate()
             game_team[1].set_onfield_players()
             game_team[1].formation.cal_team_rate()
 
