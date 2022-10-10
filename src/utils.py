@@ -54,3 +54,45 @@ def create_empty_position(dict_pos, players):
             dict_pos[pos] += 1
     
     return dict_pos
+
+def parctice_player_result(player, year):
+    output = pd.DataFrame({"名前":[player.name],
+                           "uuid":[player.uuid],
+                           "年齢":[player.age],
+                           "Rate":[player.main_rate],
+                           "残契約":[0],
+                           "ポジション":[player.main_position],
+                           "リーグ":["practice_league"],
+                           "年度":[year],
+                           "チーム":["practice_team"],
+                           "分類":["練習リーグ"],
+                           "順位":["記録なし"],
+                           "試合数":[20],
+                           "goal":[0],
+                           "assist":[0],
+                           "CS":[0],
+                           "怪我欠場":[0],
+                           "賞":[""],
+    })
+    return output
+
+def self_study_player_result(player, year):
+    output = pd.DataFrame({"名前":[player.name],
+                           "uuid":[player.uuid],
+                           "年齢":[player.age],
+                           "Rate":[player.main_rate],
+                           "残契約":[0],
+                           "ポジション":[player.main_position],
+                           "リーグ":["所属なし"],
+                           "年度":[year],
+                           "チーム":["所属なし"],
+                           "分類":["自主練"],
+                           "順位":["記録なし"],
+                           "試合数":[0],
+                           "goal":[0],
+                           "assist":[0],
+                           "CS":[0],
+                           "怪我欠場":[0],
+                           "賞":[""],
+    })
+    return output
