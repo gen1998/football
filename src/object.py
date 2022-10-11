@@ -912,23 +912,23 @@ class ProSoccerLeague:
                     competition_result = p.result[self.competition.name]
 
                     output = pd.DataFrame({"名前":[p.name, p.name],
-                                "uuid":[p.uuid, p.uuid],
-                                "年齢":[season_result["年齢"], competition_result["年齢"]],
-                                "Rate" : [p.main_rate, p.main_rate],
-                                "残契約":[p.contract-1, p.contract-1],
-                                "ポジション":[p.partification_position, p.partification_position],
-                                "リーグ":[l.name, l.name],
-                                "年度":[season_result["年度"], competition_result["年度"]],
-                                "チーム":[t.name, t.name],
-                                "レンタル元":["", ""],
-                                "分類":[season_result["分類"], competition_result["分類"]],
-                                "順位" :  f"{league_rank.index(t.name)+1}位",
-                                "試合数":[season_result["試合数"], competition_result["試合数"]],
-                                "goal":[season_result["goal"], competition_result["goal"]],
-                                "assist":[season_result["assist"], competition_result["assist"]],
-                                "CS":[season_result["CS"], competition_result["CS"]],
-                                "怪我欠場":[season_result["怪我欠場"], competition_result["怪我欠場"]],
-                                "賞":["", ""]})
+                                           "uuid":[p.uuid, p.uuid],
+                                           "年齢":[season_result["年齢"], competition_result["年齢"]],
+                                           "Rate" : [p.main_rate, p.main_rate],
+                                           "残契約":[p.contract-1, p.contract-1],
+                                           "ポジション":[p.partification_position, p.partification_position],
+                                           "リーグ":[l.name, l.name],
+                                           "年度":[season_result["年度"], competition_result["年度"]],
+                                           "チーム":[t.name, t.name],
+                                           "レンタル元":["", ""],
+                                           "分類":[season_result["分類"], competition_result["分類"]],
+                                           "順位" :  f"{league_rank.index(t.name)+1}位",
+                                           "試合数":[season_result["試合数"], competition_result["試合数"]],
+                                           "goal":[season_result["goal"], competition_result["goal"]],
+                                           "assist":[season_result["assist"], competition_result["assist"]],
+                                           "CS":[season_result["CS"], competition_result["CS"]],
+                                           "怪我欠場":[season_result["怪我欠場"], competition_result["怪我欠場"]],
+                                           "賞":["", ""]})
                     all_output = pd.concat([all_output, output])
                     """
                     df = {}
