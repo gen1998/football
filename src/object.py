@@ -1045,7 +1045,7 @@ class ProSoccerLeague:
                         p.main_rate = p.cal_rate()
                     
                     # 登録メンバー外の成長が止まった選手は戦力外
-                    if p.age>p.grow_minage:
+                    if p.age>p.grow_min_age:
                         p.contract=0
 
                     p.cal_all_rate()
