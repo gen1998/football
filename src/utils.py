@@ -100,7 +100,7 @@ def rental_player_result(player, year, team_name):
                            "レンタル元":[team_name],
                            "分類":["レンタルリーグ"],
                            "順位":["記録なし"],
-                           "試合数":[40],
+                           "試合数":[30],
                            "goal":[0],
                            "assist":[0],
                            "CS":[0],
