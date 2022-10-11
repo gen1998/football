@@ -958,7 +958,7 @@ class ProSoccerLeague:
                     
                     # 試合に出てない人を戦力外にする処理
                     if p.partification_position is None:
-                        if p.contract<3 and np.random.rand()<0.5:
+                        if p.contract<3 and np.random.rand()<0.7:
                             p.contract = 0
                     
                     # 成長
@@ -1043,6 +1043,11 @@ class ProSoccerLeague:
                         p.select_main_position()
                     else:
                         p.main_rate = p.cal_rate()
+                    
+                    # 登録メンバー外の成長が止まった選手は戦力外
+                    if p.age>p.grow_minage:
+                        p.contract=0
+
                     p.cal_all_rate()
                     p.consider_retirement()
         self.players_result = pd.concat([self.players_result, all_output])
@@ -1149,7 +1154,7 @@ class ProSoccerLeague:
 
                 # 新しく選手を作成する
                 Cp = Create_player(position_num=t.empty_position, 
-                                    min_rate=30, max_rate=80, 
+                                    min_rate=40, max_rate=80, 
                                     age_mean=20,
                                     now_year=year,
                                     mean_rate=l.mean_rate,
@@ -1264,8 +1269,8 @@ class Create_player:
                 if new:
                     age = 18
                 else:
-                    age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 4))), 18), 37)
-                injury_possibility = np.random.normal(0.04, 0.02) + max((self.pac-85)*0.005, 0)
+                    age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 5))), 18), 37)
+                injury_possibility = np.random.normal(0.05, 0.02) + max((self.pac-85)*0.005, 0)
 
                 A = FieldPlayer(age=18, now_year=self.now_year, name=random.choice(self.df_name_list), position=None,
                                 pace=self.pac, shooting=self.sho, passing=self.pas,
@@ -1296,8 +1301,8 @@ class Create_player:
                 break
 
             self.main_value = np.int8(np.round(np.random.normal(self.mean_rate, 1)))
+            injury_possibility = np.random.normal(0.02, 0.01) + max((self.pac-85)*0.005, 0)
 
-            age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 4))), 18), 37)
             div = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
             han = np.int8(np.round(np.random.normal(div, 1)))
             kic = np.int8(np.round(np.random.normal(60, 10)))
@@ -1308,9 +1313,15 @@ class Create_player:
             if div>99 or han>99 or kic>99 or ref>99 or spe>99 or pos>99:
                 continue
 
-            A = GK(name=random.choice(self.df_name_list), age=18, now_year=self.now_year, 
+            if new:
+                age = 18
+            else:
+                age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 5))), 18), 37)
+
+            A = GK(name=random.choice(self.df_name_list), age=age, now_year=self.now_year, 
                    position="GK",diving=div, handling=han, kicking=kic,
-                   reflexes=ref, speed=spe, positioning=pos)
+                   reflexes=ref, speed=spe, positioning=pos,
+                   injury_possibility=injury_possibility)
             
             for age_ in range(18, age):
                 A.grow_up(40)
