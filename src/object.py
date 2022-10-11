@@ -53,6 +53,9 @@ class FootBaller:
     def get_default(self, season_name):
         self.result[season_name]["怪我欠場"] += 1
     
+    def get_injury(self, season_name):
+        self.result[season_name]["怪我回数"] += 1
+    
     def consider_retirement(self):
         if self.retire!=1 and self.main_rate<80:
             rate = 0.00132*self.age*self.age - 1.18 + np.random.normal(0, 0.1) + self.injury_possibility
@@ -723,6 +726,7 @@ class Game:
         for p in self.home.formation.players_flat:
             if p.injury_possibility>np.random.rand():
                 p.injury=min(max(np.int8(np.round(np.random.f(100, 5)*5)), 1), 40)
+                p.get_injury(self.competition_name)
                 if p.injury > 20:
                     p.down_ability(3)
                     if p.injury > 30 and p.age > p.grow_old_age_1 and np.random.rand()<0.5:
@@ -731,6 +735,7 @@ class Game:
         for p in self.away.formation.players_flat:
             if p.injury_possibility>np.random.rand():
                 p.injury=min(max(np.int8(np.round(np.random.f(100, 5)*5)), 1), 40)
+                p.get_injury(self.competition_name)
                 if p.injury > 20:
                     p.down_ability(3)
                     if p.injury > 30 and p.age > p.grow_old_age_1 and np.random.rand()<0.5:
@@ -773,6 +778,7 @@ class League:
                 p.result[competition_name]["分類"] = kind
                 p.result[competition_name]["年齢"] = p.age
                 p.result[competition_name]["怪我欠場"] = 0
+                p.result[competition_name]["怪我回数"] = 0
     
     def set_team_result(self, season_name):
         all_team_name = [s.name for s in self.teams]
@@ -907,6 +913,51 @@ class ProSoccerLeague:
             season_name = f'{l.name}_{year}'
             league_rank = l.team_result[season_name].index.tolist()
             for t in l.teams:
+                season_result = [p.result[season_name] for p in t.register_players]
+                competition_result = [p.result[self.competition.name] for p in t.register_players]
+
+                output = pd.DataFrame({"名前":[p.name for p in t.register_players],
+                                        "uuid":[p.uuid for p in t.register_players],
+                                        "年齢":[result["年齢"] for result in season_result],
+                                        "Rate" : [p.main_rate for p in t.register_players],
+                                        "残契約":[p.contract-1 for p in t.register_players],
+                                        "ポジション":[p.partification_position for p in t.register_players],
+                                        "リーグ":[l.name for i in range(len(t.register_players))],
+                                        "年度":[result["年度"] for result in season_result],
+                                        "チーム":[t.name for i in range(len(t.register_players))],
+                                        "レンタル元":["" for i in range(len(t.register_players))],
+                                        "分類":[result["分類"] for result in season_result],
+                                        "順位" :  [f"{league_rank.index(t.name)+1}位" for i in range(len(t.register_players))],
+                                        "試合数":[result["試合数"] for result in season_result],
+                                        "goal":[result["goal"] for result in season_result],
+                                        "assist":[result["assist"] for result in season_result],
+                                        "CS":[result["CS"] for result in season_result],
+                                        "怪我欠場":[result["怪我欠場"] for result in season_result],
+                                        "怪我回数":[result["怪我回数"] for result in season_result],
+                                        "賞":["" for i in range(len(t.register_players))]})
+                all_output = pd.concat([all_output, output])
+
+                output = pd.DataFrame({"名前":[p.name for p in t.register_players],
+                                        "uuid":[p.uuid for p in t.register_players],
+                                        "年齢":[result["年齢"] for result in competition_result],
+                                        "Rate" : [p.main_rate for p in t.register_players],
+                                        "残契約":[p.contract-1 for p in t.register_players],
+                                        "ポジション":[p.partification_position for p in t.register_players],
+                                        "リーグ":[l.name for i in range(len(t.register_players))],
+                                        "年度":[result["年度"] for result in competition_result],
+                                        "チーム":[t.name for i in range(len(t.register_players))],
+                                        "レンタル元":["" for i in range(len(t.register_players))],
+                                        "分類":[result["分類"] for result in competition_result],
+                                        "順位" :  [f"{league_rank.index(t.name)+1}位" for i in range(len(t.register_players))],
+                                        "試合数":[result["試合数"] for result in competition_result],
+                                        "goal":[result["goal"] for result in competition_result],
+                                        "assist":[result["assist"] for result in competition_result],
+                                        "CS":[result["CS"] for result in competition_result],
+                                        "怪我欠場":[result["怪我欠場"] for result in competition_result],
+                                        "怪我回数":[result["怪我回数"] for result in competition_result],
+                                        "賞":["" for i in range(len(t.register_players))]})
+                all_output = pd.concat([all_output, output])
+                """
                 for p in t.register_players:
                     season_result = p.result[season_name]
                     competition_result = p.result[self.competition.name]
@@ -930,25 +981,10 @@ class ProSoccerLeague:
                                            "怪我欠場":[season_result["怪我欠場"], competition_result["怪我欠場"]],
                                            "賞":["", ""]})
                     all_output = pd.concat([all_output, output])
-                    """
-                    df = {}
-                    df[0] = p.result[season_name]
-                    df[1] = p.result[self.competition.name]
-                    df = pd.DataFrame(df.values(), index=df.keys())
-                    df["名前"] = p.name
-                    df["uuid"] = p.uuid
-                    df["リーグ"] = l.name
-                    df["チーム"] = t.name
-                    df["ポジション"] = p.partification_position
-                    df["賞"] = ""
-                    df["順位"] = f"{league_rank.index(t.name)+1}位"
-                    df["Rate"] = p.main_rate
-                    df["残契約"] = p.contract-1
-                    df["レンタル元"] = ""
-                    output = df[["名前", "uuid", "年齢", "Rate", "残契約", "ポジション", "リーグ", "年度", "チーム", "レンタル元", "分類", "順位", "試合数", "goal", "assist", "CS", "怪我欠場", "賞"]]
-                    self.players_result = pd.concat([self.players_result, output])
-                    """
-
+                """
+                for p in t.register_players:
+                    season_result = p.result[season_name]
+                    competition_result = p.result[self.competition.name]
                     p.contract -= 1
 
                     # 再契約する処理
@@ -1035,7 +1071,7 @@ class ProSoccerLeague:
             for t in l.teams:
                 for p in t.not_register_players:
                     p.contract -= 1
-                    p.grow_up(40)
+                    p.grow_up(20)
                     df_result = rental_player_result(p, year, t.name)
                     all_output = pd.concat([all_output, df_result])
 
