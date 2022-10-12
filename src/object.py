@@ -69,7 +69,7 @@ class FootBaller:
 
     def set_contract(self):
         self.free_time = 0
-        self.contract = min(max(np.int8(np.round(np.random.normal((40 - self.age)/5, 0.5))), 1), 7)
+        self.contract = min(max(np.int8(np.round(np.random.normal((40 - self.age)/4, 0.5))), 1), 7)
 
 class FieldPlayer(FootBaller):
     def __init__(self, name, age, now_year, position, pace, shooting, 
@@ -528,6 +528,7 @@ class Team:
         self.league_name = None
 
         self.empty_position = {}
+        self.formation_rate = {}
 
     def set_register_players(self):
         for p in self.affilation_players:
@@ -913,6 +914,7 @@ class ProSoccerLeague:
             season_name = f'{l.name}_{year}'
             league_rank = l.team_result[season_name].index.tolist()
             for t in l.teams:
+                t.formation_rate[season_name] = t.formation.team_rate
                 season_result = [p.result[season_name] for p in t.register_players]
                 competition_result = [p.result[self.competition.name] for p in t.register_players]
 
