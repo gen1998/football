@@ -1438,7 +1438,7 @@ class Create_player:
 
             elif pos=="CAM":
                 self.pac = np.int8(np.round(np.random.normal(60, 7)))
-                self.sho = np.int8(np.round(np.random.normal(65, 7)))
+                self.sho = np.int8(np.round(np.random.normal(70, 7)))
                 self.pas = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
                 self.dri = np.int8(np.round(np.random.normal(self.pas, 0.5)))
                 self.de = np.int8(np.round(np.random.normal(40, 7)))
@@ -1461,12 +1461,12 @@ class Create_player:
                 self.phy = np.int8(np.round(np.random.normal(self.de, 0.5)))
             
             elif pos=="CB":
-                self.pac = np.int8(np.round(np.random.normal(70, 7)))
+                self.pac = np.int8(np.round(np.random.normal(60, 7)))
                 self.sho = np.int8(np.round(np.random.normal(40, 7)))
                 self.pas = np.int8(np.round(np.random.normal(60, 7)))
                 self.dri = np.int8(np.round(np.random.normal(60, 7)))
                 self.de = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
-                self.phy = np.int8(np.round(np.random.normal(self.de, 0.5)))
+                self.phy = np.int8(np.round(np.random.normal(self.de-5, 1)))
 
             if self.pac>99 or self.de>99 or self.sho>99 or self.pas>99 or self.dri>99 or self.phy>99:
                 continue
