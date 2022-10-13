@@ -69,7 +69,7 @@ class FootBaller:
 
     def set_contract(self):
         self.free_time = 0
-        self.contract = min(max(np.int8(np.round(np.random.normal((40 - self.age)/5, 0.5))), 1), 7)
+        self.contract = min(max(np.int8(np.round(np.random.normal((40 - self.age)/4, 0.5))), 1), 7)
 
 class FieldPlayer(FootBaller):
     def __init__(self, name, age, now_year, position, pace, shooting, 
@@ -528,6 +528,7 @@ class Team:
         self.league_name = None
 
         self.empty_position = {}
+        self.formation_rate = {}
 
     def set_register_players(self):
         for p in self.affilation_players:
@@ -913,6 +914,7 @@ class ProSoccerLeague:
             season_name = f'{l.name}_{year}'
             league_rank = l.team_result[season_name].index.tolist()
             for t in l.teams:
+                t.formation_rate[season_name] = t.formation.team_rate
                 season_result = [p.result[season_name] for p in t.register_players]
                 competition_result = [p.result[self.competition.name] for p in t.register_players]
 
@@ -1436,7 +1438,7 @@ class Create_player:
 
             elif pos=="CAM":
                 self.pac = np.int8(np.round(np.random.normal(60, 7)))
-                self.sho = np.int8(np.round(np.random.normal(65, 7)))
+                self.sho = np.int8(np.round(np.random.normal(70, 7)))
                 self.pas = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
                 self.dri = np.int8(np.round(np.random.normal(self.pas, 0.5)))
                 self.de = np.int8(np.round(np.random.normal(40, 7)))
@@ -1459,12 +1461,12 @@ class Create_player:
                 self.phy = np.int8(np.round(np.random.normal(self.de, 0.5)))
             
             elif pos=="CB":
-                self.pac = np.int8(np.round(np.random.normal(70, 7)))
+                self.pac = np.int8(np.round(np.random.normal(60, 7)))
                 self.sho = np.int8(np.round(np.random.normal(40, 7)))
                 self.pas = np.int8(np.round(np.random.normal(60, 7)))
                 self.dri = np.int8(np.round(np.random.normal(60, 7)))
                 self.de = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
-                self.phy = np.int8(np.round(np.random.normal(self.de, 0.5)))
+                self.phy = np.int8(np.round(np.random.normal(self.de-5, 1)))
 
             if self.pac>99 or self.de>99 or self.sho>99 or self.pas>99 or self.dri>99 or self.phy>99:
                 continue
