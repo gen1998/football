@@ -707,7 +707,7 @@ class Team:
                         self.empty_position[pos] = 1
         
         gk_num = len([p for p in self.affilation_players if p.main_position=="GK"])
-        if gk_num>4:
+        if gk_num>3:
             self.empty_position["GK"] = 0
     
     # ランダムなポジションを補強する
@@ -723,7 +723,7 @@ class Team:
         else:
             gk_num_ = 0
 
-        if gk_num<5:
+        if gk_num<4:
             randon_position = random.choices(ALL_POSITON_LOW_GK, k=num-gk_num_)
         else:
             randon_position = random.choices(ALL_POSITON_LOW, k=num-gk_num_)
@@ -1349,22 +1349,27 @@ class ProSoccerLeague:
         
         random.shuffle(self.free_players)
 
-        for l in self.leagues:
-            for t in random.sample(l.teams, len(l.teams)):
-                # 移籍市場から選手を入団させる
-                t.set_main_rate_position()
-                t.set_empty_position(l.standard_rate)
-                self.free_players = t.get_free_players(self.free_players, l)
-                lack_num = t.member_num - len(t.affilation_players)
-                t.set_empty_position_random(lack_num)
-                self.free_players = t.get_free_players(self.free_players, l)
-                t.set_main_rate_position()
-                t.set_register_players_()
+        count = 0
+        while True:
+            if count > 2:
+                break
+            for l in self.leagues:
+                for t in random.sample(l.teams, len(l.teams)):
+                    # 移籍市場から選手を入団させる
+                    t.set_main_rate_position()
+                    t.set_empty_position(l.standard_rate)
+                    self.free_players = t.get_free_players(self.free_players, l)
+                    lack_num = t.member_num - len(t.affilation_players)
+                    t.set_empty_position_random(lack_num)
+                    self.free_players = t.get_free_players(self.free_players, l)
+                    t.set_main_rate_position()
+                    t.set_register_players_()
 
-                # 登録外の選手でレンタルにもならない選手を外に出す
-                out_players = [p for p in t.affilation_players if p.register==0 and p.age>=27]
-                self.free_players.extend(out_players)
-                t.affilation_players = [p for p in t.affilation_players if p not in out_players]
+                    # 登録外の選手でレンタルにもならない選手を外に出す
+                    out_players = [p for p in t.affilation_players if p.register==0 and p.age>=27]
+                    self.free_players.extend(out_players)
+                    t.affilation_players = [p for p in t.affilation_players if p not in out_players]
+            count+=1
 
         for l in self.leagues:
             for t in l.teams:
