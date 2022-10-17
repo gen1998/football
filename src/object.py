@@ -37,6 +37,10 @@ class FootBaller:
 
         self.grow_exp_dict = {}
         self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[1, 10, 70, 19])[0]
+
+        self.position_all_rate = {}
+        self.position_all_rate_sorted = []
+        self.index = None
     
     def get_goal(self, season_name):
         self.result[season_name]["goal"] += 1
@@ -85,7 +89,6 @@ class FieldPlayer(FootBaller):
         self.defending = defending
         self.physicality = physicality
         self.main_rate = self.cal_rate(self.main_position)
-        self.position_all_rate = {}
 
         self.pace_initial = pace
         self.shooting_initial = shooting
@@ -146,10 +149,6 @@ class FieldPlayer(FootBaller):
         elif self.main_position=='RM':
             if np.random.rand()<0.5:
                 self.main_position='LM'
-        
-        elif self.main_position=='CAM':
-            if np.random.rand()<0.1:
-                self.main_position='CF'
         
         elif self.main_position=='RWB':
             if np.random.rand()<0.5:
@@ -234,7 +233,7 @@ class FieldPlayer(FootBaller):
             self.passing_exp += game_num*grow_game_rate + grow_year_rate
             self.dribbling_exp += (game_num*grow_game_rate + grow_year_rate)/1.5
             self.physicality_exp += (game_num*grow_game_rate + grow_year_rate)/2
-        elif self.grow_position_type == "RB":
+        elif self.grow_position_type == "RB" or self.grow_position_type == "RWB":
             self.pace_exp += game_num*grow_game_rate + grow_year_rate
             self.shooting_exp += (game_num*grow_game_rate + grow_year_rate)/4
             self.passing_exp += (game_num*grow_game_rate + grow_year_rate)/2
@@ -332,7 +331,6 @@ class GK(FootBaller):
         self.speed = speed
         self.positioning = positioning
         self.main_rate = self.cal_rate()
-        self.position_all_rate = {}
 
         # 一般能力を15統一
         self.pace = 15
@@ -454,6 +452,9 @@ class Formation:
         self.formation_flat = self.__flat_formation()
         self.set_players_position()
         self.players_flat = []
+
+        self.main_rate_formation = {}
+        self.mean_rate = 0
     
     def __flat_formation(self):
         output = []
@@ -511,9 +512,22 @@ class Formation:
                     print('  SHO ', player_.shooting, '  DEF ', player_.defending)
                     print('  PAS ', player_.passing, '  PHY ', player_.physicality)
                     print()
+    
+    def print_formation_(self):
+        for pos in self.formation_flat:
+            player = self.main_rate_formation[pos]
+            if len(player) < 1:
+                print('配置なし  Rate:' '(', pos, ')')
+
+            if pos == "GK":
+                player = player[0]
+                print(player.name, '  Rate:', player.main_rate, '(', player.main_position, ')')
+            else:
+                for player_ in player:
+                    print(player_.name, '  Rate:', player_.position_all_rate[pos], '(', pos, ')')
 
 class Team:
-    def __init__(self, name, formation, min_rate=75, max_rate=85):
+    def __init__(self, name, formation, min_rate=75, max_rate=85, member_num=30):
         self.name = name
         self.min_rate = min_rate
         self.max_rate = max_rate
@@ -526,15 +540,31 @@ class Team:
         self.register_players = None
         self.not_register_players = None
         self.league_name = None
+        self.member_num = member_num
 
         self.empty_position = {}
         self.formation_rate = {}
 
     def set_register_players(self):
+        """
         for p in self.affilation_players:
             p.register = 0
 
         for pos, num in GENERAL_POSITION_NUM.items():
+            not_register = [p for p in self.affilation_players if p.register==0]
+            not_register = sorted(not_register, key=lambda x:x.position_all_rate[pos], reverse=True)
+            for p in not_register[:num]:
+                p.register = 1
+        """
+
+        for p in self.affilation_players:
+            p.register = 0
+        
+        for key, players in self.formation.main_rate_formation.items():
+            for p in players:
+                p.register = 1
+
+        for pos, num in BENCH_POSITION_NUM.items():
             not_register = [p for p in self.affilation_players if p.register==0]
             not_register = sorted(not_register, key=lambda x:x.position_all_rate[pos], reverse=True)
             for p in not_register[:num]:
@@ -546,15 +576,9 @@ class Team:
     def set_affilation_players_rate(self):
         for p in self.register_players:
             p.partification = 0
-        """
-        output = pd.DataFrame([p.position_all_rate for p in self.register_players])
-        output["injury"] = [p.injury for p in self.register_players]
-        output["partification"] = 0
-
-        self.affilation_players_all_rate = output
-        """
     
     def set_onfield_players(self):
+        """
         for p in self.register_players:
             p.partification = 0
 
@@ -571,23 +595,176 @@ class Team:
                 p.partification = 1
                 p.partification_position = fp
                 self.formation.players[fp].append(p)
-                #print(self.formation.players)
-
-            """
-            df = self.affilation_players_all_rate[((self.affilation_players_all_rate.partification==0)&(self.affilation_players_all_rate.injury<1))]
-            #df = self.affilation_players_all_rate[self.affilation_players_all_rate.injury<1]
-            select_index = df.sort_values(fp, ascending=False).index.values[:select_num]
-            self.affilation_players_all_rate.loc[select_index, "partification"] = 1
-            
-            for index in select_index:
-                self.affilation_players[index].partification = 1
-                self.affilation_players[index].partification_position = fp
-                self.formation.players[fp].append(self.affilation_players[index])
-            """
 
         for fps in self.formation.players.values():
             self.formation.players_flat.extend(fps)
+        """
 
+        self.formation.set_players_position()
+        self.formation.players_flat = []
+        self.formation.main_rate_formation = {}
+
+        for pos in self.formation.formation_flat:
+            self.formation.main_rate_formation[pos] = []
+        
+        for p in self.affilation_players:
+            p.index = 0
+            p.partification = 0
+            p.position_all_rate_sorted = sorted(p.position_all_rate.items(), key=lambda x:x[1], reverse=True)
+        
+        remain_players = [p for p in self.register_players if p.injury<1]
+        count = 0
+
+        while True:
+            if count>5 and len([p for ps in list(self.formation.main_rate_formation.values()) for p in ps])==11:
+                break
+
+            for p in remain_players:
+                for index in range(p.index, len(p.position_all_rate_sorted)):
+                    pos = p.position_all_rate_sorted[index][0]
+                    if pos in self.formation.formation_flat:
+                        self.formation.main_rate_formation[pos].append(p)
+                        p.index = index+1
+                        break
+            
+            remain_players = []
+            for pos in self.formation.formation_flat:
+                if len(self.formation.main_rate_formation[pos])<1:
+                    continue
+                buff_players = self.formation.main_rate_formation[pos]
+                self.formation.main_rate_formation[pos] = sorted(self.formation.main_rate_formation[pos], key=lambda x:x.position_all_rate[pos], reverse=True)[:self.formation.formation_num[pos]]
+                remain_players.extend([p for p in buff_players if p not in self.formation.main_rate_formation[pos]])
+            count += 1
+        
+        for pos, players in self.formation.main_rate_formation.items():
+            for p in players:
+                p.partification = 1
+                p.partification_position = pos
+                self.formation.players[pos].append(p)
+        
+        for fps in self.formation.players.values():
+            self.formation.players_flat.extend(fps)
+    
+    # 現状の最強スカッドを作成する
+    def set_main_rate_position(self):
+        self.formation.main_rate_formation = {}
+        for pos in self.formation.formation_flat:
+            self.formation.main_rate_formation[pos] = []
+        
+        for p in self.affilation_players:
+            p.index = 0
+            p.position_all_rate_sorted = sorted(p.position_all_rate.items(), key=lambda x:x[1], reverse=True)
+        
+        remain_players = self.affilation_players
+        count = 0
+
+        while True:
+            if count>5:
+                break
+
+            for p in remain_players:
+                for index in range(p.index, len(p.position_all_rate_sorted)):
+                    pos = p.position_all_rate_sorted[index][0]
+                    if pos in self.formation.formation_flat:
+                        self.formation.main_rate_formation[pos].append(p)
+                        p.index = index+1
+                        break
+            
+            remain_players = []
+            for pos in self.formation.formation_flat:
+                if len(self.formation.main_rate_formation[pos])<1:
+                    continue
+                buff_players = self.formation.main_rate_formation[pos]
+                self.formation.main_rate_formation[pos] = sorted(self.formation.main_rate_formation[pos], key=lambda x:x.position_all_rate[pos], reverse=True)[:self.formation.formation_num[pos]]
+                remain_players.extend([p for p in buff_players if p not in self.formation.main_rate_formation[pos]])
+            count += 1
+        
+        rate_sum = 0
+        num = 0
+
+        for pos, value in self.formation.main_rate_formation.items():
+            for p in value:
+                rate_sum+=p.position_all_rate[pos]
+                num += 1
+
+        self.formation.mean_rate = rate_sum/num
+    
+    # スタメンの弱いpositionを見つける
+    def set_empty_position(self, league_rate):
+        self.empty_position = {}
+
+        if self.formation.mean_rate < league_rate:
+            identify_rate = league_rate
+        else:
+            identify_rate = (self.formation.mean_rate+league_rate)/2
+        
+        for pos, value in self.formation.main_rate_formation.items():
+            for p in value:
+                if p.position_all_rate[pos]<identify_rate:
+                    if pos in self.empty_position.keys():
+                        self.empty_position[pos] += 1
+                    else:
+                        self.empty_position[pos] = 1
+        
+        gk_num = len([p for p in self.affilation_players if p.main_position=="GK"])
+        if gk_num>4:
+            self.empty_position["GK"] = 0
+    
+    # ランダムなポジションを補強する
+    def set_empty_position_random(self, num, none_gk=False):
+        self.empty_position = {}
+        gk_num = len([p for p in self.affilation_players if p.main_position=="GK"])
+
+        if none_gk==True and gk_num<3:
+            self.empty_position["GK"] = 3-gk_num
+            gk_num_ = 3-gk_num
+            if num<gk_num_:
+                num = gk_num_
+        else:
+            gk_num_ = 0
+
+        if gk_num<5:
+            randon_position = random.choices(ALL_POSITON_LOW_GK, k=num-gk_num_)
+        else:
+            randon_position = random.choices(ALL_POSITON_LOW, k=num-gk_num_)
+
+        for pos in randon_position:
+            if pos in self.empty_position.keys():
+                self.empty_position[pos] += 1
+            else:
+                self.empty_position[pos] = 1
+    
+    # empety_positionに沿った選手を移籍市場から獲得する
+    def get_free_players(self, free_players, league):
+        for pos in self.empty_position.keys():
+            num = self.empty_position[pos]
+            new_players = [p for p in free_players if p.main_position in POSITION_LOW_DICT[pos] and p.main_rate>=league.min_rate and p.main_rate<=league.max_rate]
+            new_players = sorted(new_players, key=lambda x:x.main_rate, reverse=True)
+            if len(new_players) >= num:
+                new_players = new_players[:num]
+            for p in new_players:
+                p.set_contract()
+            
+            self.affilation_players.extend(new_players)
+            free_players = [p for p in free_players if p not in new_players]
+        return free_players
+    
+    def set_register_players_(self):
+        for p in self.affilation_players:
+            p.register = 0
+        
+        for key, players in self.formation.main_rate_formation.items():
+            for p in players:
+                p.register = 1
+
+        for pos, num in BENCH_POSITION_NUM.items():
+            not_register = [p for p in self.affilation_players if p.register==0]
+            not_register = sorted(not_register, key=lambda x:x.position_all_rate[pos], reverse=True)
+            for p in not_register[:num]:
+                p.register = 1
+        
+        #self.not_register_players = [p for p in self.affilation_players if p.register==0]
+        #self.register_players = [p for p in self.affilation_players if p.register==1]
 
 class Game:
     def __init__(self, home, away, competition_name=None, 
@@ -743,7 +920,7 @@ class Game:
                         p.retire = 1
 
 class League:
-    def __init__(self, name, teams, num, category, relegation_num=0, promotion_num=0, min_rate=75, max_rate=85, mean_rate=80):
+    def __init__(self, name, teams, num, category, relegation_num=0, promotion_num=0, min_rate=75, max_rate=85, mean_rate=80, standard_rate=78):
         self.name = name
         self.teams = teams
         self.num = num
@@ -751,6 +928,7 @@ class League:
         self.min_rate = min_rate
         self.max_rate = max_rate
         self.mean_rate = mean_rate
+        self.standard_rate = standard_rate
 
         self.team_result = {}
         self.player_result = {}
@@ -1033,6 +1211,8 @@ class ProSoccerLeague:
     def set_register_member(self):
         for l in self.leagues:
             for t in l.teams:
+                #print(len([p for p in t.affilation_players if p.main_position=="GK"]))
+                t.set_main_rate_position()
                 t.set_register_players()
     
     def play_1season(self, year, competition):
@@ -1168,7 +1348,42 @@ class ProSoccerLeague:
                 t.empty_position = empty_players_pos
         
         random.shuffle(self.free_players)
+
+        for l in self.leagues:
+            for t in random.sample(l.teams, len(l.teams)):
+                # 移籍市場から選手を入団させる
+                t.set_main_rate_position()
+                t.set_empty_position(l.standard_rate)
+                self.free_players = t.get_free_players(self.free_players, l)
+                lack_num = t.member_num - len(t.affilation_players)
+                t.set_empty_position_random(lack_num)
+                self.free_players = t.get_free_players(self.free_players, l)
+                t.set_main_rate_position()
+                t.set_register_players_()
+
+                # 登録外の選手でレンタルにもならない選手を外に出す
+                out_players = [p for p in t.affilation_players if p.register==0 and p.age>=27]
+                self.free_players.extend(out_players)
+                t.affilation_players = [p for p in t.affilation_players if p not in out_players]
+
+        for l in self.leagues:
+            for t in l.teams:
+                lack_num = t.member_num - len(t.affilation_players)
+                t.set_empty_position_random(lack_num, none_gk=True)
+
+                # 新しく選手を作成する
+                Cp = Create_player(position_num=t.empty_position, 
+                                    min_rate=40, max_rate=80, 
+                                    age_mean=20,
+                                    now_year=year,
+                                    mean_rate=l.mean_rate,
+                                    df_name_list=df_name_list)
+
+                Cp.create_teams(new=True)
+                new_players = Cp.players
+                t.affilation_players.extend(new_players)
         
+        """
         for l in self.leagues:
             for t in random.sample(l.teams, len(l.teams)):
                 # 移籍市場から選手を入団させる
@@ -1200,6 +1415,7 @@ class ProSoccerLeague:
                 Cp.create_teams(new=True)
                 new_players = Cp.players
                 t.affilation_players.extend(new_players)
+        """
                     
     def play_1competition_section(self, year):
         buff_teams = self.competition_teams.copy()
@@ -1419,7 +1635,7 @@ class Create_player:
                 self.de = np.int8(np.round(np.random.normal(50, 7)))
                 self.phy = np.int8(np.round(np.random.normal(60, 7)))
             
-            elif pos == "RB":
+            elif pos == "RB" or pos == "RWB":
                 if np.random.normal(0, 1) > 0:
                     self.pac = np.int8(np.round(np.random.normal(70, 7)))
                     self.sho = np.int8(np.round(np.random.normal(50, 7)))
