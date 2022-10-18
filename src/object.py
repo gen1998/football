@@ -594,8 +594,8 @@ class Team:
             p.position_all_rate_sorted = sorted(p.position_all_rate.items(), key=lambda x:x[1], reverse=True)
         
         remain_players = [p for p in self.register_players if p.injury<1 and p.vitality>=60]
-        if len(remain_players)<18:
-            print(len(remain_players), self.name)
+        #if len(remain_players)<18:
+         #   print(len(remain_players), self.name)
         count = 0
 
         while True:
@@ -799,7 +799,7 @@ class Game:
                 change_player = tired_player[:change_num]
                 for p in change_player:
                     pos = p.partification_position
-                    bench_player = [p for p in self.home.register_players if p.partification==0]
+                    bench_player = [p for p in self.home.register_players if p.partification==0 and p.injury<1]
                     new_player = sorted(bench_player, key=lambda x:x.position_all_rate[pos], reverse=True)[0]
                     new_player.partification_position = pos
                     new_player.partification = 1
@@ -819,7 +819,7 @@ class Game:
             if change_num>0:
                 for p in change_player:
                     pos = p.partification_position
-                    bench_player = [p for p in self.away.register_players if p.partification==0]
+                    bench_player = [p for p in self.away.register_players if p.partification==0 and p.injury<1]
                     new_player = sorted(bench_player, key=lambda x:x.position_all_rate[pos], reverse=True)[0]
                     new_player.partification_position = pos
                     new_player.partification = 1
