@@ -15,7 +15,7 @@ from src.apply import *
 from src.utils import *
 
 class FootBaller:
-    def __init__(self, name, age, now_year, injury_possibility, grow_position_type):
+    def __init__(self, name, age, now_year, injury_possibility, grow_position_type, recovery_power):
         self.age = age
         self.name = name
         self.grow_min_age = min(max(np.int8(np.round(np.random.normal(24, 0.5))), 22), 26)
@@ -42,6 +42,12 @@ class FootBaller:
         self.position_all_rate_sorted = []
         self.index = None
     
+        self.vitality = 100
+        self.recovery_power = recovery_power
+
+        self.partification = 0
+        self.partification_position = None
+
     def get_goal(self, season_name):
         self.result[season_name]["goal"] += 1
     
@@ -59,6 +65,15 @@ class FootBaller:
     
     def get_injury(self, season_name):
         self.result[season_name]["怪我回数"] += 1
+    
+    def get_game_time(self, season_name, minute):
+        self.result[season_name]["出場時間"] += minute
+    
+    def recovery_vitality(self, off=False):
+        if off:
+            self.vitality = 100
+        else:
+            self.vitality = min(self.vitality+self.recovery_power, 100)
     
     def consider_retirement(self):
         if self.retire!=1 and self.main_rate<80:
@@ -79,8 +94,9 @@ class FieldPlayer(FootBaller):
     def __init__(self, name, age, now_year, position, pace, shooting, 
                  passing, dribbling, defending, physicality, 
                  injury_possibility=0, 
-                 grow_position_type=None):
-        super().__init__(name, age, now_year, injury_possibility, grow_position_type)
+                 grow_position_type=None,
+                 recovery_power=100):
+        super().__init__(name, age, now_year, injury_possibility, grow_position_type, recovery_power)
         self.main_position = position
         self.pace = pace
         self.shooting = shooting
@@ -103,9 +119,6 @@ class FieldPlayer(FootBaller):
         self.dribbling_exp = 0.0
         self.defending_exp = 0.0
         self.physicality_exp = 0.0
-
-        self.partification = 0
-        self.partification_position = None
     
     def cal_rate(self, position=None):
         if position=='ST':
@@ -321,8 +334,9 @@ class GK(FootBaller):
     def __init__(self, name, age, now_year, position, diving, 
                  handling, kicking, reflexes, 
                  speed, positioning, injury_possibility=0,
-                 grow_position_type=None):
-        super().__init__(name, age, now_year, injury_possibility, grow_position_type)
+                 grow_position_type=None,
+                 recovery_power=100):
+        super().__init__(name, age, now_year, injury_possibility, grow_position_type, recovery_power)
         self.main_position = position
         self.diving = diving
         self.handling = handling
@@ -442,13 +456,15 @@ class GK(FootBaller):
 
 class Formation:
     def __init__(self, name, formation, formation_priority, 
-                 formation_num, formation_shooting_rate, formation_assist_rate):
+                 formation_num, formation_shooting_rate, 
+                 formation_assist_rate, formation_tired_vitality):
         self.name = name
         self.formation = formation
         self.formation_priority = formation_priority
         self.formation_num = formation_num
         self.formation_shooting_rate = formation_shooting_rate
         self.formation_assist_rate = formation_assist_rate
+        self.formation_tired_vitality = formation_tired_vitality
         self.formation_flat = self.__flat_formation()
         self.set_players_position()
         self.players_flat = []
@@ -546,17 +562,6 @@ class Team:
         self.formation_rate = {}
 
     def set_register_players(self):
-        """
-        for p in self.affilation_players:
-            p.register = 0
-
-        for pos, num in GENERAL_POSITION_NUM.items():
-            not_register = [p for p in self.affilation_players if p.register==0]
-            not_register = sorted(not_register, key=lambda x:x.position_all_rate[pos], reverse=True)
-            for p in not_register[:num]:
-                p.register = 1
-        """
-
         for p in self.affilation_players:
             p.register = 0
         
@@ -578,28 +583,6 @@ class Team:
             p.partification = 0
     
     def set_onfield_players(self):
-        """
-        for p in self.register_players:
-            p.partification = 0
-
-        self.formation.set_players_position()
-        self.formation.players_flat = []
-
-        for fp in self.formation.formation_priority:
-            select_num = self.formation.formation_num[fp]
-            partification_players = [p for p in self.register_players if p.partification==0 and p.injury<1]
-            partification_players = sorted(partification_players, key=lambda x:x.position_all_rate[fp], reverse=True)
-            partification_players = partification_players[:select_num]
-
-            for p in partification_players:
-                p.partification = 1
-                p.partification_position = fp
-                self.formation.players[fp].append(p)
-
-        for fps in self.formation.players.values():
-            self.formation.players_flat.extend(fps)
-        """
-
         self.formation.set_players_position()
         self.formation.players_flat = []
         self.formation.main_rate_formation = {}
@@ -612,12 +595,17 @@ class Team:
             p.partification = 0
             p.position_all_rate_sorted = sorted(p.position_all_rate.items(), key=lambda x:x[1], reverse=True)
         
-        remain_players = [p for p in self.register_players if p.injury<1]
+        remain_players = [p for p in self.register_players if p.injury<1 and p.vitality>=60]
+        if len(remain_players)<18:
+            print(len(remain_players), self.name)
         count = 0
 
         while True:
             if count>5 and len([p for ps in list(self.formation.main_rate_formation.values()) for p in ps])==11:
                 break
+
+            if count>10:
+                raise Exception(f'{self.name}はチームを作成できません')
 
             for p in remain_players:
                 for index in range(p.index, len(p.position_all_rate_sorted)):
@@ -781,6 +769,9 @@ class Game:
         self.away_goal = 0
         self.home_pk_goal = 0
         self.away_pk_goal = 0
+        self.home_replacement = 0
+        self.away_replacement = 0
+        self.now_time = 0
         self.result = None
         self.pk = pk
         self.extra = extra
@@ -799,7 +790,46 @@ class Game:
             b = np.array(side.formation.formation_assist_rate)
             weights = a*b/sum(a*b)
             np.random.choice(side.formation.players_flat, 1, p=weights)[0].get_assist(self.competition_name)
-        
+    
+    # 途中交代
+    def change_player(self):
+        if self.home_replacement<REPLACEMENT_MAX:
+            tired_player = [p for p in self.home.formation.players_flat if p.vitality<30]
+            change_num = min(len(tired_player), REPLACEMENT_MAX-self.home_replacement)
+            if change_num>0:
+                change_player = tired_player[:change_num]
+                for p in change_player:
+                    pos = p.partification_position
+                    bench_player = [p for p in self.home.register_players if p.partification==0]
+                    new_player = sorted(bench_player, key=lambda x:x.position_all_rate[pos], reverse=True)[0]
+                    new_player.partification_position = pos
+                    new_player.partification = 1
+                    self.home.formation.players[pos].append(new_player)
+                    self.home.formation.players[pos].remove(p)
+                    self.home.formation.players_flat = []
+                    for fps in self.home.formation.players.values():
+                        self.home.formation.players_flat.extend(fps)
+                    self.home.formation.cal_team_rate()
+                    self.home_replacement += 1
+
+        if self.away_replacement<REPLACEMENT_MAX:
+            tired_player = [p for p in self.away.formation.players_flat if p.vitality<30]
+            change_num = min(len(tired_player), REPLACEMENT_MAX-self.away_replacement)
+            change_player = tired_player[:change_num]
+            if change_num>0:
+                for p in change_player:
+                    pos = p.partification_position
+                    bench_player = [p for p in self.away.register_players if p.partification==0]
+                    new_player = sorted(bench_player, key=lambda x:x.position_all_rate[pos], reverse=True)[0]
+                    new_player.partification_position = pos
+                    new_player.partification = 1
+                    self.away.formation.players[pos].append(new_player)
+                    self.away.formation.players[pos].remove(p)
+                    self.away.formation.players_flat = []
+                    for fps in self.away.formation.players.values():
+                        self.away.formation.players_flat.extend(fps)
+                    self.away.formation.cal_team_rate()
+                    self.away_replacement += 1
     
     def moment_battle(self):
         home_rate = self.home.formation.team_rate
@@ -817,12 +847,22 @@ class Game:
         if home_attack-away_defence+np.random.normal(0, self.random_std) > 0:
             self.home_goal += 1
             self.cal_goal_assit_player(self.home)
-            
         
         if away_attack-home_defence+np.random.normal(0, self.random_std) > 0:
             self.away_goal += 1
             self.cal_goal_assit_player(self.away)
-    
+        
+        for p in self.home.formation.players_flat:
+            p.vitality -= self.home.formation.formation_tired_vitality[p.partification_position]/self.moment_num
+            p.get_game_time(self.competition_name, np.int8(90/self.moment_num))
+        
+        for p in self.away.formation.players_flat:
+            p.vitality -= self.away.formation.formation_tired_vitality[p.partification_position]/self.moment_num
+            p.get_game_time(self.competition_name, np.int8(90/self.moment_num))
+        
+        if self.now_time<self.moment_num:
+            self.change_player()
+
     def battle(self):
         self.home_goal = 0
         self.away_goal = 0
@@ -836,6 +876,7 @@ class Game:
 
         # 90分間試合
         for i in range(self.moment_num):
+            self.now_time+=1
             self.moment_battle()
         
         if self.home_goal>self.away_goal:
@@ -919,6 +960,12 @@ class Game:
                     if p.injury > 30 and p.age > p.grow_old_age_1 and np.random.rand()<0.5:
                         p.retire = 1
 
+        for p in self.home.register_players:
+            p.recovery_vitality()
+        
+        for p in self.away.register_players:
+            p.recovery_vitality()
+
 class League:
     def __init__(self, name, teams, num, category, relegation_num=0, promotion_num=0, min_rate=75, max_rate=85, mean_rate=80, standard_rate=78):
         self.name = name
@@ -958,6 +1005,8 @@ class League:
                 p.result[competition_name]["年齢"] = p.age
                 p.result[competition_name]["怪我欠場"] = 0
                 p.result[competition_name]["怪我回数"] = 0
+                p.result[competition_name]["出場時間"] = 0
+                p.recovery_vitality(off=True)
     
     def set_team_result(self, season_name):
         all_team_name = [s.name for s in self.teams]
@@ -1109,6 +1158,7 @@ class ProSoccerLeague:
                                         "分類":[result["分類"] for result in season_result],
                                         "順位" :  [f"{league_rank.index(t.name)+1}位" for i in range(len(t.register_players))],
                                         "試合数":[result["試合数"] for result in season_result],
+                                        "出場時間":[result["出場時間"] for result in season_result],
                                         "goal":[result["goal"] for result in season_result],
                                         "assist":[result["assist"] for result in season_result],
                                         "CS":[result["CS"] for result in season_result],
@@ -1130,6 +1180,7 @@ class ProSoccerLeague:
                                         "分類":[result["分類"] for result in competition_result],
                                         "順位" :  [f"{league_rank.index(t.name)+1}位" for i in range(len(t.register_players))],
                                         "試合数":[result["試合数"] for result in competition_result],
+                                        "出場時間":[result["出場時間"] for result in competition_result],
                                         "goal":[result["goal"] for result in competition_result],
                                         "assist":[result["assist"] for result in competition_result],
                                         "CS":[result["CS"] for result in competition_result],
@@ -1137,31 +1188,7 @@ class ProSoccerLeague:
                                         "怪我回数":[result["怪我回数"] for result in competition_result],
                                         "賞":["" for i in range(len(t.register_players))]})
                 all_output = pd.concat([all_output, output])
-                """
-                for p in t.register_players:
-                    season_result = p.result[season_name]
-                    competition_result = p.result[self.competition.name]
 
-                    output = pd.DataFrame({"名前":[p.name, p.name],
-                                           "uuid":[p.uuid, p.uuid],
-                                           "年齢":[season_result["年齢"], competition_result["年齢"]],
-                                           "Rate" : [p.main_rate, p.main_rate],
-                                           "残契約":[p.contract-1, p.contract-1],
-                                           "ポジション":[p.partification_position, p.partification_position],
-                                           "リーグ":[l.name, l.name],
-                                           "年度":[season_result["年度"], competition_result["年度"]],
-                                           "チーム":[t.name, t.name],
-                                           "レンタル元":["", ""],
-                                           "分類":[season_result["分類"], competition_result["分類"]],
-                                           "順位" :  f"{league_rank.index(t.name)+1}位",
-                                           "試合数":[season_result["試合数"], competition_result["試合数"]],
-                                           "goal":[season_result["goal"], competition_result["goal"]],
-                                           "assist":[season_result["assist"], competition_result["assist"]],
-                                           "CS":[season_result["CS"], competition_result["CS"]],
-                                           "怪我欠場":[season_result["怪我欠場"], competition_result["怪我欠場"]],
-                                           "賞":["", ""]})
-                    all_output = pd.concat([all_output, output])
-                """
                 for p in t.register_players:
                     season_result = p.result[season_name]
                     competition_result = p.result[self.competition.name]
@@ -1178,7 +1205,7 @@ class ProSoccerLeague:
                             p.contract = 0
                     
                     # 成長
-                    p.grow_up(season_result["試合数"]+competition_result["試合数"])
+                    p.grow_up((season_result["出場時間"]+competition_result["出場時間"])/90)
                     if p.main_position != "GK":
                         p.select_main_position()
                     else:
@@ -1214,6 +1241,12 @@ class ProSoccerLeague:
                 #print(len([p for p in t.affilation_players if p.main_position=="GK"]))
                 t.set_main_rate_position()
                 t.set_register_players()
+
+    def play_holiday(self):
+        for l in self.leagues:
+            for t in l.teams:
+                for p in t.register_players:
+                    p.recovery_vitality(off=True)
     
     def play_1season(self, year, competition):
         league_calender = create_calender()
@@ -1237,6 +1270,9 @@ class ProSoccerLeague:
             sections = league_calender.iloc[day, :]
             for league in self.leagues:
                 league.play_1section(year, sections)
+            
+            if day%5==0:
+                self.play_holiday()
         #b = time.time()
         #print("1年play : ", b-s)
         
@@ -1387,40 +1423,6 @@ class ProSoccerLeague:
                 Cp.create_teams(new=True)
                 new_players = Cp.players
                 t.affilation_players.extend(new_players)
-        
-        """
-        for l in self.leagues:
-            for t in random.sample(l.teams, len(l.teams)):
-                # 移籍市場から選手を入団させる
-                for pos in ALL_POSITON_LOW_GK:
-                    if pos not in t.empty_position.keys():
-                        continue
-                    num = t.empty_position[pos]
-                    new_players = [p for p in self.free_players if p.main_position in POSITION_LOW_DICT[pos] and p.main_rate>=l.min_rate and p.main_rate<=l.max_rate]
-                    new_players = sorted(new_players, key=lambda x:x.main_rate, reverse=True)
-                    if len(new_players) >= num:
-                        new_players = new_players[:num]
-                        t.empty_position.pop(pos)
-                    else:
-                        t.empty_position[pos] -= len(new_players)
-                    for p in new_players:
-                        p.set_contract()
-                        #print(p.main_position)
-
-                    t.affilation_players.extend(new_players)
-                    self.free_players = [p for p in self.free_players if p not in new_players]
-
-                # 新しく選手を作成する
-                Cp = Create_player(position_num=t.empty_position, 
-                                    min_rate=40, max_rate=80, 
-                                    age_mean=20,
-                                    now_year=year,
-                                    mean_rate=l.mean_rate,
-                                    df_name_list=df_name_list)
-                Cp.create_teams(new=True)
-                new_players = Cp.players
-                t.affilation_players.extend(new_players)
-        """
                     
     def play_1competition_section(self, year):
         buff_teams = self.competition_teams.copy()
@@ -1529,13 +1531,15 @@ class Create_player:
                     age = 18
                 else:
                     age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 5))), 18), 37)
-                injury_possibility = np.random.normal(0.05, 0.02) + max((self.pac-85)*0.005, 0)
+                injury_possibility = np.random.normal(0.035, 0.02) + max((self.pac-85)*0.005, 0)
+                recovery_power = min(max(np.random.normal(69, 5), 50), 80)
 
                 A = FieldPlayer(age=18, now_year=self.now_year, name=random.choice(self.df_name_list), position=None,
                                 pace=self.pac, shooting=self.sho, passing=self.pas,
                                 dribbling=self.dri, defending=self.de, physicality=self.phy,
                                 injury_possibility=injury_possibility,
-                                grow_position_type=grow_position_type)
+                                grow_position_type=grow_position_type,
+                                recovery_power=recovery_power)
                 
                 for age_ in range(18, age):
                     A.grow_up(min(np.int8(np.random.normal(30, 3)), 40))
@@ -1560,7 +1564,8 @@ class Create_player:
                 break
 
             self.main_value = np.int8(np.round(np.random.normal(self.mean_rate, 1)))
-            injury_possibility = np.random.normal(0.02, 0.01) + max((self.pac-85)*0.005, 0)
+            injury_possibility = np.random.normal(0.035, 0.01) + max((self.pac-85)*0.005, 0)
+            recovery_power = min(max(np.random.normal(69, 5), 50), 80)
 
             div = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
             han = np.int8(np.round(np.random.normal(div, 1)))
@@ -1580,7 +1585,8 @@ class Create_player:
             A = GK(name=random.choice(self.df_name_list), age=age, now_year=self.now_year, 
                    position="GK",diving=div, handling=han, kicking=kic,
                    reflexes=ref, speed=spe, positioning=pos,
-                   injury_possibility=injury_possibility)
+                   injury_possibility=injury_possibility,
+                   recovery_power=recovery_power)
             
             for age_ in range(18, age):
                 A.grow_up(40)

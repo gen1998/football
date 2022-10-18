@@ -21,7 +21,8 @@ def random_create_formation():
                        formation_priority=select_foramtion['formation_priority'],
                        formation_num=select_foramtion['formation_num'],
                        formation_assist_rate=select_foramtion['formation_assist_rate'],
-                       formation_shooting_rate=select_foramtion['formation_shooting_rate'])
+                       formation_shooting_rate=select_foramtion['formation_shooting_rate'],
+                       formation_tired_vitality=select_foramtion['formation_tired_vitality'])
     return output
 
 """

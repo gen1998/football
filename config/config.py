@@ -19,3 +19,4 @@ GENERAL_POSITION_NUM = {"ST":2, "RW":2, "CAM":2, "RM":2, "CM":4, "CDM":2, "CB":4
 BENCH_POSITION_NUM = {"ST":2, "RW":1, "CAM":1, "RM":1, "CM":2, "CDM":1, "CB":3, "RB":1, "GK":2}
 
 N = 1000000
+REPLACEMENT_MAX = 3
