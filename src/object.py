@@ -47,6 +47,7 @@ class FootBaller:
 
         self.partification = 0
         self.partification_position = None
+        self.startup = 0
 
     def get_goal(self, season_name):
         self.result[season_name]["goal"] += 1
@@ -578,10 +579,6 @@ class Team:
         self.not_register_players = [p for p in self.affilation_players if p.register==0]
         self.register_players = [p for p in self.affilation_players if p.register==1]
     
-    def set_affilation_players_rate(self):
-        for p in self.register_players:
-            p.partification = 0
-    
     def set_onfield_players(self):
         self.formation.set_players_position()
         self.formation.players_flat = []
@@ -593,6 +590,7 @@ class Team:
         for p in self.affilation_players:
             p.index = 0
             p.partification = 0
+            p.startup = 0
             p.position_all_rate_sorted = sorted(p.position_all_rate.items(), key=lambda x:x[1], reverse=True)
         
         remain_players = [p for p in self.register_players if p.injury<1 and p.vitality>=60]
@@ -627,6 +625,7 @@ class Team:
         for pos, players in self.formation.main_rate_formation.items():
             for p in players:
                 p.partification = 1
+                p.startup = 0
                 p.partification_position = pos
                 self.formation.players[pos].append(p)
         
@@ -804,6 +803,7 @@ class Game:
                     new_player = sorted(bench_player, key=lambda x:x.position_all_rate[pos], reverse=True)[0]
                     new_player.partification_position = pos
                     new_player.partification = 1
+                    new_player.get_game_count(self.competition_name)
                     self.home.formation.players[pos].append(new_player)
                     self.home.formation.players[pos].remove(p)
                     self.home.formation.players_flat = []
@@ -823,6 +823,7 @@ class Game:
                     new_player = sorted(bench_player, key=lambda x:x.position_all_rate[pos], reverse=True)[0]
                     new_player.partification_position = pos
                     new_player.partification = 1
+                    new_player.get_game_count(self.competition_name)
                     self.away.formation.players[pos].append(new_player)
                     self.away.formation.players[pos].remove(p)
                     self.away.formation.players_flat = []
@@ -868,11 +869,11 @@ class Game:
         self.away_goal = 0
 
         # 試合数カウント
-        for t in self.home.formation.players_flat:
-            t.get_game_count(self.competition_name)
+        for p in self.home.formation.players_flat:
+            p.get_game_count(self.competition_name)
         
-        for t in self.away.formation.players_flat:
-            t.get_game_count(self.competition_name)
+        for p in self.away.formation.players_flat:
+            p.get_game_count(self.competition_name)
 
         # 90分間試合
         for i in range(self.moment_num):
@@ -935,14 +936,16 @@ class Game:
         
         # クリーンシート
         if self.away_goal == 0:
-            for t in self.home.formation.players_flat:
-                t.get_cs(self.competition_name)
+            for p in self.home.formation.players_flat:
+                if p.startup==1:
+                    p.get_cs(self.competition_name)
         if self.home_goal == 0:
-            for t in self.away.formation.players_flat:
-                t.get_cs(self.competition_name)
+            for p in self.away.formation.players_flat:
+                if p.startup==1:
+                    p.get_cs(self.competition_name)
         
         # 怪我 F分布で表現
-        for p in self.home.formation.players_flat:
+        for p in [p for p in self.home.register_players if p.partification==1]:
             if p.injury_possibility>np.random.rand():
                 p.injury=min(max(np.int8(np.round(np.random.f(100, 5)*5)), 1), 40)
                 p.get_injury(self.competition_name)
@@ -951,7 +954,7 @@ class Game:
                     if p.injury > 30 and p.age > p.grow_old_age_1 and np.random.rand()<0.5:
                         p.retire = 1
         
-        for p in self.away.formation.players_flat:
+        for p in [p for p in self.away.register_players if p.partification==1]:
             if p.injury_possibility>np.random.rand():
                 p.injury=min(max(np.int8(np.round(np.random.f(100, 5)*5)), 1), 40)
                 p.get_injury(self.competition_name)
@@ -1053,10 +1056,8 @@ class League:
                     p.get_default(season_name)
 
             # スターティングメンバーを作る
-            #self.teams[section[0]-1].set_affilation_players_rate()
             self.teams[section[0]-1].set_onfield_players()
             self.teams[section[0]-1].formation.cal_team_rate()
-            #self.teams[section[1]-1].set_affilation_players_rate()
             self.teams[section[1]-1].set_onfield_players()
             self.teams[section[1]-1].formation.cal_team_rate()
             
@@ -1200,9 +1201,8 @@ class ProSoccerLeague:
                             p.set_contract()
                     
                     # 試合に出てない人を戦力外にする処理
-                    if p.partification_position is None:
-                        if p.contract<3 and np.random.rand()<0.7:
-                            p.contract = 0
+                    if p.partification_position is None and p.main_position!="GK":
+                        p.contract = 0
                     
                     # 成長
                     p.grow_up((season_result["出場時間"]+competition_result["出場時間"])/90)
@@ -1445,10 +1445,8 @@ class ProSoccerLeague:
                     p.get_default(self.competition.name)
             
             # スターティングメンバーを作る
-            #game_team[0].set_affilation_players_rate()
             game_team[0].set_onfield_players()
             game_team[0].formation.cal_team_rate()
-            #game_team[1].set_affilation_players_rate()
             game_team[1].set_onfield_players()
             game_team[1].formation.cal_team_rate()
 
