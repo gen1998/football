@@ -625,7 +625,7 @@ class Team:
         for pos, players in self.formation.main_rate_formation.items():
             for p in players:
                 p.partification = 1
-                p.startup = 0
+                p.startup = 1
                 p.partification_position = pos
                 self.formation.players[pos].append(p)
         
