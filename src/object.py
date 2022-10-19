@@ -800,6 +800,8 @@ class Game:
                 for p in change_player:
                     pos = p.partification_position
                     bench_player = [p for p in self.home.register_players if p.partification==0 and p.injury<1 and p.vitality>=30]
+                    if len(bench_player)<1:
+                        break
                     new_player = sorted(bench_player, key=lambda x:x.position_all_rate[pos], reverse=True)[0]
                     new_player.partification_position = pos
                     new_player.partification = 1
