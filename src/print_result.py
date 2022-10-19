@@ -70,8 +70,10 @@ def print_player(ProLeague, all_member, uuid_):
         l = [l for l in ProLeague.leagues if l.name==all_member[all_member.uuid == uuid.UUID(uuid_)]["リーグ"].values[0]][0]
         t = [t for t in l.teams if t.name==all_member[all_member.uuid == uuid.UUID(uuid_)]["チーム"].values[0]][0]
         player = [p for p in t.affilation_players if p.uuid == uuid.UUID(uuid_)][0]
-    plt.subplot(1, 4, 4)
-    print_rate(player)
+
+    if player.main_position=="GK":
+        plt.subplot(1, 4, 4)
+        print_rate(player)
 
     plt.show()
 
