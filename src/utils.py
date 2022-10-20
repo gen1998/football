@@ -86,6 +86,7 @@ def parctice_player_result(player, year):
                            "怪我欠場":[0],
                            "怪我回数":[0],
                            "賞":[""],
+                           "全ポジション回数":[""],
     })
     return output
 
@@ -110,6 +111,7 @@ def rental_player_result(player, year, team_name):
                            "怪我欠場":[0],
                            "怪我回数":[0],
                            "賞":[""],
+                           "全ポジション回数":[""],
     })
     return output
 
@@ -133,5 +135,6 @@ def self_study_player_result(player, year):
                            "怪我欠場":[0],
                            "怪我回数":[0],
                            "賞":[""],
+                           "全ポジション回数":[""],
     })
     return output
