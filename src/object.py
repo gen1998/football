@@ -4,6 +4,7 @@ import pandas as pd
 import random
 import time
 import uuid
+import json
 
 from tqdm import tqdm
 
@@ -69,6 +70,12 @@ class FootBaller:
     
     def get_game_time(self, season_name, minute):
         self.result[season_name]["出場時間"] += minute
+    
+    def get_position(self, season_name, position):
+        if position in self.result[season_name]["ポジション"].keys():
+            self.result[season_name]["ポジション"][position] += 1
+        else:
+            self.result[season_name]["ポジション"][position] = 1
     
     def recovery_vitality(self, off=False):
         if off:
@@ -806,6 +813,7 @@ class Game:
                     new_player.partification_position = pos
                     new_player.partification = 1
                     new_player.get_game_count(self.competition_name)
+                    new_player.get_position(self.competition_name, pos)
                     self.home.formation.players[pos].append(new_player)
                     self.home.formation.players[pos].remove(p)
                     self.home.formation.players_flat = []
@@ -828,6 +836,7 @@ class Game:
                     new_player.partification_position = pos
                     new_player.partification = 1
                     new_player.get_game_count(self.competition_name)
+                    new_player.get_position(self.competition_name, pos)
                     self.away.formation.players[pos].append(new_player)
                     self.away.formation.players[pos].remove(p)
                     self.away.formation.players_flat = []
@@ -872,12 +881,14 @@ class Game:
         self.home_goal = 0
         self.away_goal = 0
 
-        # 試合数カウント
+        # 試合数・ポジションカウント
         for p in self.home.formation.players_flat:
             p.get_game_count(self.competition_name)
+            p.get_position(self.competition_name, p.partification_position)
         
         for p in self.away.formation.players_flat:
             p.get_game_count(self.competition_name)
+            p.get_position(self.competition_name, p.partification_position)
 
         # 90分間試合
         for i in range(self.moment_num):
@@ -1013,6 +1024,8 @@ class League:
                 p.result[competition_name]["怪我欠場"] = 0
                 p.result[competition_name]["怪我回数"] = 0
                 p.result[competition_name]["出場時間"] = 0
+                p.result[competition_name]["ポジション"] = {}
+                p.result[competition_name]["ポジション"][p.main_position] = 0
                 p.recovery_vitality(off=True)
     
     def set_team_result(self, season_name):
@@ -1155,7 +1168,7 @@ class ProSoccerLeague:
                                         "年齢":[result["年齢"] for result in season_result],
                                         "Rate" : [p.main_rate for p in t.register_players],
                                         "残契約":[p.contract-1 for p in t.register_players],
-                                        "ポジション":[p.partification_position for p in t.register_players],
+                                        "ポジション":[sorted(result["ポジション"].items(), key=lambda x:x[1], reverse=True)[0][0] for result in season_result],
                                         "リーグ":[l.name for i in range(len(t.register_players))],
                                         "年度":[result["年度"] for result in season_result],
                                         "チーム":[t.name for i in range(len(t.register_players))],
@@ -1169,7 +1182,8 @@ class ProSoccerLeague:
                                         "CS":[result["CS"] for result in season_result],
                                         "怪我欠場":[result["怪我欠場"] for result in season_result],
                                         "怪我回数":[result["怪我回数"] for result in season_result],
-                                        "賞":["" for i in range(len(t.register_players))]})
+                                        "賞":["" for i in range(len(t.register_players))],
+                                        "全ポジション回数":[json.dumps(result["ポジション"]) for result in season_result],})
                 all_output = pd.concat([all_output, output])
 
                 output = pd.DataFrame({"名前":[p.name for p in t.register_players],
@@ -1177,7 +1191,7 @@ class ProSoccerLeague:
                                         "年齢":[result["年齢"] for result in competition_result],
                                         "Rate" : [p.main_rate for p in t.register_players],
                                         "残契約":[p.contract-1 for p in t.register_players],
-                                        "ポジション":[p.partification_position for p in t.register_players],
+                                        "ポジション":[sorted(result["ポジション"].items(), key=lambda x:x[1], reverse=True)[0][0] for result in competition_result],
                                         "リーグ":[l.name for i in range(len(t.register_players))],
                                         "年度":[result["年度"] for result in competition_result],
                                         "チーム":[t.name for i in range(len(t.register_players))],
@@ -1191,7 +1205,8 @@ class ProSoccerLeague:
                                         "CS":[result["CS"] for result in competition_result],
                                         "怪我欠場":[result["怪我欠場"] for result in competition_result],
                                         "怪我回数":[result["怪我回数"] for result in competition_result],
-                                        "賞":["" for i in range(len(t.register_players))]})
+                                        "賞":["" for i in range(len(t.register_players))],
+                                        "全ポジション回数":[json.dumps(result["ポジション"]) for result in competition_result],})
                 all_output = pd.concat([all_output, output])
 
                 for p in t.register_players:
