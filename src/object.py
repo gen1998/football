@@ -1236,23 +1236,52 @@ class ProSoccerLeague:
 
                     # 引退
                     p.consider_retirement()
+
+            #リーグ最多得点
+            all_output = all_output.reset_index(drop=True)
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name))]
+            df_search_index = df_search.loc[df_search["goal"]==df_search["goal"].max(), :].index.tolist()
+            l.champion.loc[season_name, "得点王"] = ""
+            for index in df_search_index:
+                all_output.loc[index, "賞"] += f"得点王({season_name}), "
+                l.champion.loc[season_name, "得点王"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
+            l.champion.loc[season_name, "得点王"] += f"  /  {df_search.loc[index, 'goal']}点"
         
+        # コンペティション最多得点
+        all_output = all_output.reset_index(drop=True)
+        df_search = all_output[(all_output["分類"]=="カップ戦")]
+        df_search_index = df_search.loc[df_search["goal"]==df_search["goal"].max(), :].index.tolist()
+        self.competition_result_top.loc[self.competition.name, "得点王"] = ""
+        for index in df_search_index:
+            all_output.loc[index, "賞"] += f"得点王({self.competition.name}), "
+            self.competition_result_top.loc[self.competition.name, "得点王"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}({df_search.loc[index, 'リーグ']})), "  
+        self.competition_result_top.loc[self.competition.name, "得点王"] += f"/  {df_search.loc[index, 'goal']}点"
+
         self.players_result = pd.concat([self.players_result, all_output])
         self.players_result = self.players_result.reset_index(drop=True)
 
         # コンペティション最多得点
+        """
+        all_output = all_output.reset_index(drop=True)
+        df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name))]
+        df_search_index = df_search.loc[df_search["goal"]==df_search["goal"].max(), :].index.tolist()
+        for index in df_search_index:
+            all_output.loc[index, "賞"] += f"得点王({season_name}), "
         df_search = self.players_result[((self.players_result["分類"]=="カップ戦")&(self.players_result["年度"]==year))]
         df_search_index = pd.to_numeric(df_search["goal"]).idxmax()
         self.players_result.loc[df_search_index, "賞"] += f"得点王({self.competition.name}), "
         self.competition_result_top.loc[self.competition.name, "得点王"] = f"{df_search.loc[df_search_index, '名前']}({df_search.loc[df_search_index, 'チーム']}({df_search.loc[df_search_index, 'リーグ']}))  /  {df_search.loc[df_search_index, 'goal']}点"
 
+        """
         # リーグ最多得点
+        """
         for l in self.leagues:
             season_name = f'{l.name}_{year}'
             df_search = self.players_result[((self.players_result["分類"]=="リーグ")&(self.players_result["年度"]==year)&(self.players_result["リーグ"]==l.name))]
             df_search_index = pd.to_numeric(df_search["goal"]).idxmax()
             self.players_result.loc[df_search_index, "賞"] += f"得点王({season_name}), "
             l.champion.loc[season_name, "得点王"] = f"{df_search.loc[df_search_index, '名前']}({df_search.loc[df_search_index, 'チーム']})  /  {df_search.loc[df_search_index, 'goal']}点"
+        """
 
     def set_register_member(self):
         for l in self.leagues:
