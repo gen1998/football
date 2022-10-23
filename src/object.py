@@ -761,7 +761,8 @@ class Team:
         #self.register_players = [p for p in self.affilation_players if p.register==1]
 
 class Game:
-    def __init__(self, home, away, competition_name=None, 
+    def __init__(self, home, away, competition_name=None,
+                 home_advantage=1.0, away_advantage=1.0,
                  mid_rate=0.5, gk_rate=0.2, random_std=10, 
                  moment_num=10, extra=0, pk=0):
         self.home = home
@@ -771,6 +772,9 @@ class Game:
         self.random_std = random_std
         self.moment_num = moment_num
         self.competition_name = competition_name
+
+        self.home_advantage = home_advantage
+        self.away_advantage = away_advantage
         self.home_goal = 0
         self.away_goal = 0
         self.home_pk_goal = 0
@@ -852,11 +856,11 @@ class Game:
         home_ratio = home_rate['ALL']/(home_rate['ALL']+away_rate['ALL'])
         away_ratio = away_rate['ALL']/(home_rate['ALL']+away_rate['ALL'])
         
-        home_attack = (home_rate['ATT']+home_rate['MID']*self.mid_rate)*home_ratio
-        away_attack = (away_rate['ATT']+away_rate['MID']*self.mid_rate)*away_ratio
+        home_attack = ((home_rate['ATT']+home_rate['MID']*self.mid_rate)*home_ratio)*self.home_advantage
+        away_attack = ((away_rate['ATT']+away_rate['MID']*self.mid_rate)*away_ratio)*self.away_advantage
         
-        home_defence = (home_rate['DEF']+home_rate['MID']*self.mid_rate)*home_ratio+home_rate["GK"]*self.gk_rate
-        away_defence = (away_rate['DEF']+away_rate['MID']*self.mid_rate)*away_ratio+away_rate["GK"]*self.gk_rate
+        home_defence = ((home_rate['DEF']+home_rate['MID']*self.mid_rate)*home_ratio+home_rate["GK"]*self.gk_rate)*self.home_advantage
+        away_defence = ((away_rate['DEF']+away_rate['MID']*self.mid_rate)*away_ratio+away_rate["GK"]*self.gk_rate)*self.away_advantage
         
         if home_attack-away_defence+np.random.normal(0, self.random_std) > 0:
             self.home_goal += 1
@@ -1080,7 +1084,9 @@ class League:
             
 
             game = Game(home=self.teams[section[0]-1], 
-                        away=self.teams[section[1]-1], 
+                        away=self.teams[section[1]-1],
+                        home_advantage=1.1,
+                        away_advantage=0.9,
                         competition_name=season_name,
                         moment_num=9,
                         random_std=15)
