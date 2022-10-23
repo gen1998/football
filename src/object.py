@@ -1224,7 +1224,8 @@ class ProSoccerLeague:
                         p.contract = 0
                     
                     # 成長
-                    p.grow_up((season_result["出場時間"]+competition_result["出場時間"])/90)
+                    #p.grow_up((season_result["出場時間"]+competition_result["出場時間"])/90)
+                    p.grow_up((season_result["試合数"]+competition_result["試合数"]))
                     if p.main_position != "GK":
                         p.select_main_position()
                     else:
