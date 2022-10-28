@@ -761,9 +761,8 @@ class Team:
         #self.register_players = [p for p in self.affilation_players if p.register==1]
 
 class Game:
-    def __init__(self, home, away, competition_name=None,
-                 home_advantage=1.0, away_advantage=1.0,
-                 mid_rate=0.5, gk_rate=0.2, random_std=10, 
+    def __init__(self, home, away, competition_name=None, 
+                 mid_rate=0.5, gk_rate=0.2, random_std=0.3, 
                  moment_num=10, extra=0, pk=0):
         self.home = home
         self.away = away
@@ -856,17 +855,17 @@ class Game:
         home_ratio = home_rate['ALL']/(home_rate['ALL']+away_rate['ALL'])
         away_ratio = away_rate['ALL']/(home_rate['ALL']+away_rate['ALL'])
         
-        home_attack = ((home_rate['ATT']+home_rate['MID']*self.mid_rate)*home_ratio)*self.home_advantage
-        away_attack = ((away_rate['ATT']+away_rate['MID']*self.mid_rate)*away_ratio)*self.away_advantage
+        home_attack = ((home_rate['ATT']+home_rate['MID']*self.mid_rate)*home_ratio)/100
+        away_attack = ((away_rate['ATT']+away_rate['MID']*self.mid_rate)*away_ratio)/100
         
-        home_defence = ((home_rate['DEF']+home_rate['MID']*self.mid_rate)*home_ratio+home_rate["GK"]*self.gk_rate)*self.home_advantage
-        away_defence = ((away_rate['DEF']+away_rate['MID']*self.mid_rate)*away_ratio+away_rate["GK"]*self.gk_rate)*self.away_advantage
+        home_defence = ((home_rate['DEF']+home_rate['MID']*self.mid_rate)*home_ratio+home_rate["GK"]*self.gk_rate)/100
+        away_defence = ((away_rate['DEF']+away_rate['MID']*self.mid_rate)*away_ratio+away_rate["GK"]*self.gk_rate)/100
         
-        if home_attack-away_defence+np.random.normal(0, self.random_std) > 0:
+        if home_attack-away_defence+np.random.normal(-0.3, self.random_std) > 0:
             self.home_goal += 1
             self.cal_goal_assit_player(self.home)
         
-        if away_attack-home_defence+np.random.normal(0, self.random_std) > 0:
+        if away_attack-home_defence+np.random.normal(-0.3, self.random_std) > 0:
             self.away_goal += 1
             self.cal_goal_assit_player(self.away)
         
