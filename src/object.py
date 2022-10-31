@@ -772,8 +772,6 @@ class Game:
         self.moment_num = moment_num
         self.competition_name = competition_name
 
-        self.home_advantage = home_advantage
-        self.away_advantage = away_advantage
         self.home_goal = 0
         self.away_goal = 0
         self.home_pk_goal = 0
@@ -1081,14 +1079,11 @@ class League:
             self.teams[section[1]-1].set_onfield_players()
             self.teams[section[1]-1].formation.cal_team_rate()
             
-
             game = Game(home=self.teams[section[0]-1], 
                         away=self.teams[section[1]-1],
-                        home_advantage=1.1,
-                        away_advantage=0.9,
                         competition_name=season_name,
-                        moment_num=9,
-                        random_std=15)
+                        moment_num=24,
+                        random_std=0.3)
             game.battle()
 
             home_team_name = self.teams[section[0]-1].name
@@ -1507,8 +1502,8 @@ class ProSoccerLeague:
             cup_game = Game(home=game_team[0], 
                             away=game_team[1], 
                             competition_name=self.competition.name,
-                            moment_num=9,
-                            random_std=20,
+                            moment_num=24,
+                            random_std=0.3,
                             pk=1)
             cup_game.battle()
             if cup_game.result=="home" or cup_game.result=="home-pk":
