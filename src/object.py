@@ -129,6 +129,7 @@ class FieldPlayer(FootBaller):
         self.physicality_exp = 0.0
     
     def cal_rate(self, position=None):
+        """
         if position=='ST':
             pac, sho, pas, dri, de, phy = 0.10, 0.80, 0.00, 0.03, 0.00, 0.10
         if position=='CAM' or position=='CF':
@@ -145,6 +146,28 @@ class FieldPlayer(FootBaller):
             pac, sho, pas, dri, de, phy = 0.39, 0.10, 0.15, 0.39, 0.00, 0.00
         if position=='LM' or position=='RM':
             pac, sho, pas, dri, de, phy = 0.20, 0.20, 0.33, 0.20, 0.10, 0.00
+        if position=='LWB' or position=='RWB':
+            pac, sho, pas, dri, de, phy = 0.38, 0.00, 0.20, 0.10, 0.30, 0.05
+        if position=='LB' or position=='RB':
+            pac, sho, pas, dri, de, phy = 0.38, 0.00, 0.10, 0.20, 0.30, 0.05
+        """
+
+        if position=='ST':
+            pac, sho, pas, dri, de, phy = 0.10, 0.80, 0.00, 0.03, 0.00, 0.10
+        if position=='CAM' or position=='CF':
+            pac, sho, pas, dri, de, phy = 0.08, 0.25, 0.40, 0.30, 0.00, 0.00
+        if position=='CM':
+            pac, sho, pas, dri, de, phy = 0.05, 0.05, 0.48, 0.30, 0.10, 0.05
+        if position=='CDM':
+            pac, sho, pas, dri, de, phy = 0.03, 0.00, 0.30, 0.10, 0.40, 0.20
+
+        if position=='CB':
+            pac, sho, pas, dri, de, phy = 0.08, 0.00, 0.00, 0.00, 0.65, 0.30
+
+        if position=='RW' or position=='LW':
+            pac, sho, pas, dri, de, phy = 0.25, 0.20, 0.23, 0.35, 0.00, 0.00
+        if position=='LM' or position=='RM':
+            pac, sho, pas, dri, de, phy = 0.20, 0.10, 0.33, 0.30, 0.10, 0.00
         if position=='LWB' or position=='RWB':
             pac, sho, pas, dri, de, phy = 0.38, 0.00, 0.20, 0.10, 0.30, 0.05
         if position=='LB' or position=='RB':
@@ -225,48 +248,36 @@ class FieldPlayer(FootBaller):
                 grow_year_rate = -2.0
 
         if self.grow_position_type == "ST":
-            self.shooting_exp += game_num*grow_game_rate + grow_year_rate
+            self.shooting_exp += (game_num*grow_game_rate + grow_year_rate)*0.9
             self.pace_exp += (game_num*grow_game_rate + grow_year_rate)*0.8
             self.dribbling_exp += (game_num*grow_game_rate + grow_year_rate)*0.7
             self.passing_exp += (game_num*grow_game_rate + grow_year_rate)/2
             self.physicality_exp += (game_num*grow_game_rate + grow_year_rate)/2
         elif self.grow_position_type == "ST_":
-            self.shooting_exp += game_num*grow_game_rate + grow_year_rate
+            self.shooting_exp += (game_num*grow_game_rate + grow_year_rate)*0.9
             self.pace_exp += (game_num*grow_game_rate + grow_year_rate)/2
             self.dribbling_exp += (game_num*grow_game_rate + grow_year_rate)/1.5
             self.passing_exp += (game_num*grow_game_rate + grow_year_rate)/2
             self.physicality_exp += game_num*grow_game_rate + grow_year_rate
         elif self.grow_position_type == "RW":
-            self.shooting_exp += (game_num*grow_game_rate + grow_year_rate)/2
-            self.pace_exp += game_num*grow_game_rate + grow_year_rate
-            self.dribbling_exp += (game_num*grow_game_rate + grow_year_rate)*0.9
-            self.passing_exp += (game_num*grow_game_rate + grow_year_rate)/2
-            self.physicality_exp += (game_num*grow_game_rate + grow_year_rate)/3
-        elif self.grow_position_type == "RW_":
             self.shooting_exp += (game_num*grow_game_rate + grow_year_rate)*0.8
             self.pace_exp += game_num*grow_game_rate + grow_year_rate
-            self.dribbling_exp += (game_num*grow_game_rate + grow_year_rate)*0.9
-            self.passing_exp += (game_num*grow_game_rate + grow_year_rate)/1.5
-            self.physicality_exp += (game_num*grow_game_rate + grow_year_rate)/2
+            self.dribbling_exp += game_num*grow_game_rate + grow_year_rate
+            self.passing_exp += (game_num*grow_game_rate + grow_year_rate)*0.8
+            self.physicality_exp += (game_num*grow_game_rate + grow_year_rate)/3
         elif self.grow_position_type == "RM":
             self.pace_exp += (game_num*grow_game_rate + grow_year_rate)*0.8
             self.shooting_exp += (game_num*grow_game_rate + grow_year_rate)/2
             self.passing_exp += game_num*grow_game_rate + grow_year_rate
-            self.dribbling_exp += (game_num*grow_game_rate + grow_year_rate)/1.5
+            self.dribbling_exp += game_num*grow_game_rate + grow_year_rate
+            self.defending_exp += (game_num*grow_game_rate + grow_year_rate)/2
             self.physicality_exp += (game_num*grow_game_rate + grow_year_rate)/2
         elif self.grow_position_type == "RB" or self.grow_position_type == "RWB":
-            self.pace_exp += game_num*grow_game_rate + grow_year_rate
+            self.pace_exp += (game_num*grow_game_rate + grow_year_rate)*0.9
             self.shooting_exp += (game_num*grow_game_rate + grow_year_rate)/4
             self.passing_exp += (game_num*grow_game_rate + grow_year_rate)/2
             self.dribbling_exp += (game_num*grow_game_rate + grow_year_rate)/2
             self.defending_exp += (game_num*grow_game_rate + grow_year_rate)*0.8
-            self.physicality_exp += (game_num*grow_game_rate + grow_year_rate)/2
-        elif self.grow_position_type == "RB_":
-            self.pace_exp += (game_num*grow_game_rate + grow_year_rate)/2
-            self.shooting_exp += (game_num*grow_game_rate + grow_year_rate)/4
-            self.passing_exp += (game_num*grow_game_rate + grow_year_rate)*0.8
-            self.dribbling_exp += (game_num*grow_game_rate + grow_year_rate)*0.8
-            self.defending_exp += game_num*grow_game_rate + grow_year_rate
             self.physicality_exp += (game_num*grow_game_rate + grow_year_rate)/2
         elif self.grow_position_type == "CAM":
             self.pace_exp += (game_num*grow_game_rate + grow_year_rate)/2
@@ -285,16 +296,16 @@ class FieldPlayer(FootBaller):
         elif self.grow_position_type == "CDM":
             self.pace_exp += (game_num*grow_game_rate + grow_year_rate)/2
             self.shooting_exp += (game_num*grow_game_rate + grow_year_rate)/3
-            self.passing_exp += (game_num*grow_game_rate + grow_year_rate)/1.5
+            self.passing_exp += game_num*grow_game_rate + grow_year_rate
             self.dribbling_exp += (game_num*grow_game_rate + grow_year_rate)/1.5
             self.defending_exp += game_num*grow_game_rate + grow_year_rate
-            self.physicality_exp += (game_num*grow_game_rate + grow_year_rate)*0.8
+            self.physicality_exp += (game_num*grow_game_rate + grow_year_rate)/2
         elif self.grow_position_type == "CB":
             self.pace_exp += (game_num*grow_game_rate + grow_year_rate)/1.5
             self.passing_exp += (game_num*grow_game_rate + grow_year_rate)/2
             self.dribbling_exp += (game_num*grow_game_rate + grow_year_rate)/2
-            self.defending_exp += game_num*grow_game_rate + grow_year_rate
-            self.physicality_exp += game_num*grow_game_rate + grow_year_rate
+            self.defending_exp += (game_num*grow_game_rate + grow_year_rate)*0.9
+            self.physicality_exp += (game_num*grow_game_rate + grow_year_rate)*0.9
         
         self.pace = min(np.int8(np.round(self.pace_initial+self.pace_exp)), 99)
         self.shooting = min(np.int8(np.round(self.shooting_initial+self.shooting_exp)), 99)
@@ -1653,6 +1664,85 @@ class Create_player:
         while True:
             if pos == "ST":
                 if np.random.normal(0, 1) > 0:
+                    self.sho = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+                    self.pac = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+                    self.pas = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+                    self.dri = np.int8(np.round(np.random.normal(self.main_value-5, 1)))
+                    self.de = np.int8(np.round(np.random.normal(30, 5)))
+                    self.phy = np.int8(np.round(np.random.normal(self.main_value-5, 3)))
+                else:
+                    self.pac = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+                    self.sho = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+                    self.pas = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+                    self.dri = np.int8(np.round(np.random.normal(self.main_value-5, 1)))
+                    self.de = np.int8(np.round(np.random.normal(30, 5)))
+                    self.phy = np.int8(np.round(np.random.normal(self.main_value, 0.5)))
+                    pos = "ST_"
+
+            elif pos == "RW":
+                self.pac = np.int8(np.round(np.random.normal(80, 5)))
+                self.dri = np.int8(np.round(np.random.normal(self.main_value, 0.5)))
+                self.pas = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+                self.sho = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+                self.de = np.int8(np.round(np.random.normal(30, 5)))
+                self.phy = np.int8(np.round(np.random.normal(50, 7)))
+
+            elif pos == "RM":
+                self.pac = np.int8(np.round(np.random.normal(70, 7)))
+                self.sho = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+                self.pas = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+                self.dri = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+                self.de = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+                self.phy = np.int8(np.round(np.random.normal(50, 7)))
+
+            elif pos == "RB" or pos == "RWB":
+                self.pac = np.int8(np.round(np.random.normal(80, 5)))
+                self.sho = np.int8(np.round(np.random.normal(40, 7)))
+                self.de = np.int8(np.round(np.random.normal(self.main_value-3, 5)))
+                self.pas = np.int8(np.round(np.random.normal(self.main_value-5, 3)))
+                self.dri = np.int8(np.round(np.random.normal(self.main_value-5, 3)))
+                self.phy = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+
+            elif pos=="CAM":
+                self.pac = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+                self.sho = np.int8(np.round(np.random.normal(self.main_value-5, 3)))
+                self.pas = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+                self.dri = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+                self.de = np.int8(np.round(np.random.normal(40, 7)))
+                self.phy = np.int8(np.round(np.random.normal(50, 7)))
+
+            elif pos=="CM":
+                self.pac = np.int8(np.round(np.random.normal(self.main_value-5, 3)))
+                self.sho = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+                self.pas = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+                self.dri = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+                self.de = np.int8(np.round(np.random.normal(self.main_value-5, 3)))
+                self.phy = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+
+            elif pos=="CDM":
+                self.pac = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+                self.sho = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
+                self.de = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+                self.pas = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+                self.dri = np.int8(np.round(np.random.normal(self.main_value-5, 3)))
+                self.phy = np.int8(np.round(np.random.normal(self.main_value-5, 3)))
+
+            elif pos=="CB":
+                self.pac = np.int8(np.round(np.random.normal(60, 7)))
+                self.sho = np.int8(np.round(np.random.normal(40, 7)))
+                self.pas = np.int8(np.round(np.random.normal(self.main_value-20, 10)))
+                self.dri = np.int8(np.round(np.random.normal(self.main_value-20, 10)))
+                self.de = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+                self.phy = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
+
+            if self.pac>99 or self.de>99 or self.sho>99 or self.pas>99 or self.dri>99 or self.phy>99:
+                continue
+            else:
+                break
+        """
+        while True:
+            if pos == "ST":
+                if np.random.normal(0, 1) > 0:
                     self.pac = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
                     self.sho = np.int8(np.round(np.random.normal(self.pac, 0.5)))
                     self.pas = np.int8(np.round(np.random.normal(60, 7)))
@@ -1747,164 +1837,4 @@ class Create_player:
             else:
                 break
         return pos
-    
-    """
-    def create_player(self, pos):
-        while True:
-            if pos == "ST":
-                if np.random.normal(0, 1) > 0:
-                    self.pac = np.int8(np.round(np.random.normal(self.main_value, 5)))
-                    self.sho = np.int8(np.round(np.random.normal(self.pac, 5)))
-                    self.pas = np.int8(np.round(np.random.normal(60, 7)))
-                    self.dri = np.int8(np.round(np.random.normal(self.pac-5, 5)))
-                    self.de = np.int8(np.round(np.random.normal(30, 5)))
-                    self.phy = np.int8(np.round(np.random.normal(60, 7)))
-                else:
-                    self.pac = np.int8(np.round(np.random.normal(60, 7)))
-                    self.sho = np.int8(np.round(np.random.normal(self.main_value, 5)))
-                    self.pas = np.int8(np.round(np.random.normal(60, 7)))
-                    self.dri = np.int8(np.round(np.random.normal(self.sho-5, 5)))
-                    self.de = np.int8(np.round(np.random.normal(30, 5)))
-                    self.phy = np.int8(np.round(np.random.normal(self.sho, 5)))
-                    pos = "ST_"
-            
-            elif pos == "RW":
-                if np.random.normal(0, 1) > 0:
-                    self.pac = np.int8(np.round(np.random.normal(70, 7)))
-                    self.sho = np.int8(np.round(np.random.normal(60, 7)))
-                    self.pas = np.int8(np.round(np.random.normal(self.pac-5, 5)))
-                    self.dri = np.int8(np.round(np.random.normal(self.pac, 5)))
-                    self.de = np.int8(np.round(np.random.normal(30, 5)))
-                    self.phy = np.int8(np.round(np.random.normal(50, 7)))
-                else:
-                    self.pac = np.int8(np.round(np.random.normal(60, 7)))
-                    self.dri = np.int8(np.round(np.random.normal(self.main_value, 5)))
-                    self.sho = np.int8(np.round(np.random.normal(self.dri, 5)))
-                    self.pas = np.int8(np.round(np.random.normal(self.dri-5, 5)))
-                    self.de = np.int8(np.round(np.random.normal(30, 5)))
-                    self.phy = np.int8(np.round(np.random.normal(50, 5)))
-                    pos = "RW_"
-            
-            elif pos == "RM":
-                self.pac = np.int8(np.round(np.random.normal(70, 7)))
-                self.sho = np.int8(np.round(np.random.normal(60, 7)))
-                self.pas = np.int8(np.round(np.random.normal(self.pac, 5)))
-                self.dri = np.int8(np.round(np.random.normal(self.pac-5, 5)))
-                self.de = np.int8(np.round(np.random.normal(50, 7)))
-                self.phy = np.int8(np.round(np.random.normal(60, 7)))
-            
-            elif pos == "RB":
-                if np.random.normal(0, 1) > 0:
-                    self.pac = np.int8(np.round(np.random.normal(70, 7)))
-                    self.sho = np.int8(np.round(np.random.normal(50, 7)))
-                    self.de = np.int8(np.round(np.random.normal(60, 7)))
-                    self.pas = np.int8(np.round(np.random.normal(self.de-5, 5)))
-                    self.dri = np.int8(np.round(np.random.normal(self.pas, 5)))
-                    self.phy = np.int8(np.round(np.random.normal(60, 7)))
-                else:
-                    self.pac = np.int8(np.round(np.random.normal(60, 7)))
-                    self.sho = np.int8(np.round(np.random.normal(50, 7)))
-                    self.de = np.int8(np.round(np.random.normal(self.main_value, 5)))
-                    self.pas = np.int8(np.round(np.random.normal(self.de, 5)))
-                    self.dri = np.int8(np.round(np.random.normal(self.de, 5)))
-                    self.phy = np.int8(np.round(np.random.normal(60, 7)))
-                    pos = "RB_"
-
-            elif pos=="CAM":
-                self.pac = np.int8(np.round(np.random.normal(60, 7)))
-                self.sho = np.int8(np.round(np.random.normal(65, 7)))
-                self.pas = np.int8(np.round(np.random.normal(self.main_value, 5)))
-                self.dri = np.int8(np.round(np.random.normal(self.pas, 5)))
-                self.de = np.int8(np.round(np.random.normal(40, 7)))
-                self.phy = np.int8(np.round(np.random.normal(60, 7)))
-            
-            elif pos=="CM":
-                self.pac = np.int8(np.round(np.random.normal(65, 7)))
-                self.sho = np.int8(np.round(np.random.normal(60, 7)))
-                self.pas = np.int8(np.round(np.random.normal(self.main_value, 5)))
-                self.dri = np.int8(np.round(np.random.normal(self.pas, 3)))
-                self.de = np.int8(np.round(np.random.normal(self.pas-5, 3)))
-                self.phy = np.int8(np.round(np.random.normal(self.pas-3, 3)))
-            
-            elif pos=="CDM":
-                self.pac = np.int8(np.round(np.random.normal(60, 7)))
-                self.sho = np.int8(np.round(np.random.normal(55, 7)))
-                self.de = np.int8(np.round(np.random.normal(self.main_value, 5)))
-                self.pas = np.int8(np.round(np.random.normal(self.de-5, 5)))
-                self.dri = np.int8(np.round(np.random.normal(self.pas, 5)))
-                self.phy = np.int8(np.round(np.random.normal(self.de, 5)))
-            
-            elif pos=="CB":
-                self.pac = np.int8(np.round(np.random.normal(70, 7)))
-                self.sho = np.int8(np.round(np.random.normal(40, 7)))
-                self.pas = np.int8(np.round(np.random.normal(60, 7)))
-                self.dri = np.int8(np.round(np.random.normal(60, 7)))
-                self.de = np.int8(np.round(np.random.normal(self.main_value, 5)))
-                self.phy = np.int8(np.round(np.random.normal(self.de, 5)))
-
-            if self.pac>99 or self.de>99 or self.sho>99 or self.pas>99 or self.dri>99 or self.phy>99:
-                continue
-            else:
-                break
-        return pos
-
-    def create_teams(self):
-        for pos in ALL_POSITON_LOW:
-            if pos not in self.position_num.keys():
-                continue
-            num = self.position_num[pos]
-            count = 0
-            while True:
-                grow_position_type = self.create_player(pos)
-                age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 4))), 18), 37)
-                injury_possibility = np.random.normal(0.03, 0.02) + max((self.pac-85)*0.005, 0)
-
-                A = FieldPlayer(age=age, name=random.choice(self.df_name_list), position=None,
-                                pace=self.pac, shooting=self.sho, passing=self.pas,
-                                dribbling=self.dri, defending=self.de, physicality=self.phy,
-                                injury_possibility=injury_possibility,
-                                grow_position_type=grow_position_type)
-
-                A.select_main_position()
-                if A.main_rate<self.min_rate or A.main_rate>self.max_rate:
-                    continue
-
-                A.cal_all_rate()
-                A.set_contract()
-                count += 1
-                self.players.append(A)
-                if count >= num:
-                    break
-        
-        count = 0
-        while True:
-            if "GK" not in self.position_num.keys():
-                break
-            if count>=self.position_num["GK"]:
-                break
-
-            age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 4))), 18), 37)
-            div = np.int8(np.round(np.random.normal(70, 10)))
-            han = np.int8(np.round(np.random.normal(div, 5)))
-            kic = np.int8(np.round(np.random.normal(60, 10)))
-            ref = np.int8(np.round(np.random.normal(div, 5)))
-            spe = np.int8(np.round(np.random.normal(60, 15)))
-            pos = np.int8(np.round(np.random.normal(div, 5)))
-
-            if div>99 or han>99 or kic>99 or ref>99 or spe>99 or pos>99:
-                continue
-
-            A = GK(name=random.choice(self.df_name_list), age=age, position="GK",
-                   diving=div, handling=han, kicking=kic,
-                   reflexes=ref, speed=spe, positioning=pos)
-
-            A.cal_rate()
-            A.cal_all_rate()
-            A.set_contract()
-
-            if A.main_rate<self.min_rate or A.main_rate>self.max_rate:
-                continue
-
-            self.players.append(A)
-            count += 1
     """
