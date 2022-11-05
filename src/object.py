@@ -562,13 +562,9 @@ class Formation:
                     print(player_.name, '  Rate:', player_.position_all_rate[pos], '(', pos, ')')
 
 class Team:
-    def __init__(self, name, formation, min_rate=75, max_rate=85, member_num=30):
+    def __init__(self, name, formation, member_num=30):
         self.name = name
-        self.min_rate = min_rate
-        self.max_rate = max_rate
         self.formation = formation
-        self.relegation = 0
-        self.promotion = 0
         self.result = pd.DataFrame(columns=['win', 'lose', 'row', '得点', '失点', '得失点差', 'Points', '順位', 'リーグ名'])
         self.competition_result = {}
         self.affilation_players = None
@@ -579,6 +575,10 @@ class Team:
 
         self.empty_position = {}
         self.formation_rate = {}
+
+        # 昇格降格変数
+        self.relegation = 0
+        self.promotion = 0
 
     def set_register_players(self):
         for p in self.affilation_players:
@@ -880,7 +880,7 @@ class Game:
         
         for p in self.home.formation.players_flat:
             p.vitality -= self.home.formation.formation_tired_vitality[p.partification_position]/self.moment_num
-            p.get_game_time(self.competition_name, np.int8(90/self.moment_num))
+            p.get_game_time(self.competition_name, 90/self.moment_num)
         
         for p in self.away.formation.players_flat:
             p.vitality -= self.away.formation.formation_tired_vitality[p.partification_position]/self.moment_num
@@ -1130,20 +1130,18 @@ class Competition:
         self.max_round = max_round
         self.section_interval = num_section//self.max_round
 
-class ProSoccerLeague:
-    def __init__(self, name, leagues):
+class CountryLeague:
+    def __init__(self, name, leagues, competition_name=None):
         self.name = name
         self.leagues = leagues
 
         self.players_result = pd.DataFrame()
 
         self.competition = None
+        self.competition_name = competition_name
         self.competition_teams = None
         self.competition_result = {}
         self.competition_result_top = pd.DataFrame(columns=["年度", "優勝", "準優勝"])
-
-        self.retire_players = []
-        self.free_players = []
     
     def set_competition(self, competition_name, year, num_section):
         self.competition_teams=[]
@@ -1272,33 +1270,9 @@ class ProSoccerLeague:
         self.players_result = pd.concat([self.players_result, all_output])
         self.players_result = self.players_result.reset_index(drop=True)
 
-        # コンペティション最多得点
-        """
-        all_output = all_output.reset_index(drop=True)
-        df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name))]
-        df_search_index = df_search.loc[df_search["goal"]==df_search["goal"].max(), :].index.tolist()
-        for index in df_search_index:
-            all_output.loc[index, "賞"] += f"得点王({season_name}), "
-        df_search = self.players_result[((self.players_result["分類"]=="カップ戦")&(self.players_result["年度"]==year))]
-        df_search_index = pd.to_numeric(df_search["goal"]).idxmax()
-        self.players_result.loc[df_search_index, "賞"] += f"得点王({self.competition.name}), "
-        self.competition_result_top.loc[self.competition.name, "得点王"] = f"{df_search.loc[df_search_index, '名前']}({df_search.loc[df_search_index, 'チーム']}({df_search.loc[df_search_index, 'リーグ']}))  /  {df_search.loc[df_search_index, 'goal']}点"
-
-        """
-        # リーグ最多得点
-        """
-        for l in self.leagues:
-            season_name = f'{l.name}_{year}'
-            df_search = self.players_result[((self.players_result["分類"]=="リーグ")&(self.players_result["年度"]==year)&(self.players_result["リーグ"]==l.name))]
-            df_search_index = pd.to_numeric(df_search["goal"]).idxmax()
-            self.players_result.loc[df_search_index, "賞"] += f"得点王({season_name}), "
-            l.champion.loc[season_name, "得点王"] = f"{df_search.loc[df_search_index, '名前']}({df_search.loc[df_search_index, 'チーム']})  /  {df_search.loc[df_search_index, 'goal']}点"
-        """
-
     def set_register_member(self):
         for l in self.leagues:
             for t in l.teams:
-                #print(len([p for p in t.affilation_players if p.main_position=="GK"]))
                 t.set_main_rate_position()
                 t.set_register_players()
 
@@ -1308,10 +1282,10 @@ class ProSoccerLeague:
                 for p in t.register_players:
                     p.recovery_vitality(off=True)
     
-    def play_1season(self, year, competition):
+    def prepare_1season(self, year):
         league_calender = create_calender()
         num_section = len(league_calender)
-        self.competition = competition
+        self.competition = Competition(name=f"{self.competition_name}_{year}")
         self.set_competition(self.competition.name, year, num_section)
         self.set_players_partification()
         self.set_register_member()
@@ -1322,167 +1296,6 @@ class ProSoccerLeague:
             season_name = f'{l.name}_{year}'
             l.set_player_result(season_name, year, "リーグ")
             l.set_team_result(season_name)
-        #s = time.time()
-        # 一年play
-        for day in tqdm(range(num_section)):
-            if day==int(self.competition.section_interval*self.competition.now_round):
-                self.play_1competition_section(year)
-            sections = league_calender.iloc[day, :]
-            for league in self.leagues:
-                league.play_1section(year, sections)
-            
-            if day%5==0:
-                self.play_holiday()
-        #b = time.time()
-        #print("1年play : ", b-s)
-        
-        #s = time.time()
-        for l in self.leagues:
-            l.cal_1year_result(year)
-        #b = time.time()
-        #print("リーグresult : ", b-s)
-
-        #s = time.time()
-        # 登録外のメンバーをレンタル先で活躍させる
-        all_output = pd.DataFrame()
-        for l in self.leagues:
-            for t in l.teams:
-                for p in t.not_register_players:
-                    p.contract -= 1
-                    p.grow_up(20)
-                    df_result = rental_player_result(p, year, t.name)
-                    all_output = pd.concat([all_output, df_result])
-
-                    if p.main_position != "GK":
-                        p.select_main_position()
-                    else:
-                        p.main_rate = p.cal_rate()
-                    
-                    # 登録メンバー外の成長が止まった選手は戦力外
-                    if p.age>p.grow_min_age:
-                        p.contract=0
-
-                    p.cal_all_rate()
-                    p.consider_retirement()
-        self.players_result = pd.concat([self.players_result, all_output])
-        self.players_result = self.players_result.reset_index(drop=True)
-        #b = time.time()
-        #print("レンタル : ", b-s)
-        
-        #s = time.time()
-        self.cal_players_result(year)
-        #print("self.players_result", self.players_result)
-        #b = time.time()
-        #print("player result : ", b-s)
-        
-        #s = time.time()
-        for index in range(len(self.leagues)):
-            season_name = f"{self.leagues[index].name}_{year}"
-            if self.leagues[index].category!="top":
-                promotion = self.leagues[index].promotion[season_name]
-                promotion_team = [t for t in self.leagues[index].teams if t.name in promotion]
-                self.leagues[index].teams = [s for s in self.leagues[index].teams if s not in promotion_team]
-                self.leagues[index-1].teams.extend(promotion_team)
-
-            if self.leagues[index].category!="lowest":
-                relegation = self.leagues[index].relegation[season_name]
-                relegation_team = [t for t in self.leagues[index].teams if t.name in relegation]
-                self.leagues[index].teams = [s for s in self.leagues[index].teams if s not in relegation_team]
-                self.leagues[index+1].teams.extend(relegation_team)
-        #b = time.time()
-        #print("昇格降格 : ", b-s)
-            
-        #print("self.players_result", self.players_result)
-    
-    def play_offseason(self, df_name_list, year):
-        # フリー契約の人
-        if len(self.free_players) > 0:
-            for p in self.free_players:
-                if p.age<=25:
-                    p.grow_up(20)
-                    df_result = parctice_player_result(p, year)
-                    self.players_result = pd.concat([self.players_result, df_result])
-                else:
-                    p.grow_up(0)
-                    df_result = self_study_player_result(p, year)
-                    self.players_result = pd.concat([self.players_result, df_result])
-                if p.main_position != "GK":
-                    p.select_main_position()
-                else:
-                    p.main_rate = p.cal_rate()
-                p.cal_all_rate()
-
-                p.free_time += 1
-                p.consider_retirement()
-            self.players_result = self.players_result.reset_index(drop=True)
-            retire_player = [p for p in self.free_players if p.retire==1]
-            self.retire_players.extend(retire_player)
-            self.free_players = [p for p in self.free_players if p not in retire_player]
-
-        # 引退と契約切れを行う
-        for l in self.leagues:
-            for t in l.teams:
-                # 引退
-                retire_player = [p for p in t.affilation_players if p.retire==1]
-                self.retire_players.extend(retire_player)
-                t.affilation_players = [p for p in t.affilation_players if p not in retire_player]
-
-                # 契約切れ
-                free_players = [p for p in t.affilation_players if p.contract==0]
-                self.free_players.extend(free_players)
-                t.affilation_players = [p for p in t.affilation_players if p not in free_players]
-
-                # リーグのレベルにそぐわない選手を契約切れに
-                out_players = [p for p in t.affilation_players if p.main_rate>=l.max_rate]
-                self.free_players.extend(out_players)
-                t.affilation_players = [p for p in t.affilation_players if p not in out_players]
-
-                empty_players_pos = {}
-                empty_players_pos = create_empty_position(empty_players_pos, retire_player)
-                empty_players_pos = create_empty_position(empty_players_pos, free_players)
-                empty_players_pos = create_empty_position(empty_players_pos, out_players)
-                t.empty_position = empty_players_pos
-        
-        random.shuffle(self.free_players)
-
-        count = 0
-        while True:
-            if count > 2:
-                break
-            for l in self.leagues:
-                for t in random.sample(l.teams, len(l.teams)):
-                    # 移籍市場から選手を入団させる
-                    t.set_main_rate_position()
-                    t.set_empty_position(l.standard_rate)
-                    self.free_players = t.get_free_players(self.free_players, l)
-                    lack_num = t.member_num - len(t.affilation_players)
-                    t.set_empty_position_random(lack_num)
-                    self.free_players = t.get_free_players(self.free_players, l)
-                    t.set_main_rate_position()
-                    t.set_register_players_()
-
-                    # 登録外の選手でレンタルにもならない選手を外に出す
-                    out_players = [p for p in t.affilation_players if p.register==0 and p.age>=27]
-                    self.free_players.extend(out_players)
-                    t.affilation_players = [p for p in t.affilation_players if p not in out_players]
-            count+=1
-
-        for l in self.leagues:
-            for t in l.teams:
-                lack_num = t.member_num - len(t.affilation_players)
-                t.set_empty_position_random(lack_num, none_gk=True)
-
-                # 新しく選手を作成する
-                Cp = Create_player(position_num=t.empty_position, 
-                                    min_rate=40, max_rate=80, 
-                                    age_mean=20,
-                                    now_year=year,
-                                    mean_rate=l.mean_rate,
-                                    df_name_list=df_name_list)
-
-                Cp.create_teams(new=True)
-                new_players = Cp.players
-                t.affilation_players.extend(new_players)
                     
     def play_1competition_section(self, year):
         buff_teams = self.competition_teams.copy()
@@ -1554,6 +1367,182 @@ class ProSoccerLeague:
         if len(self.competition_teams)<2:
             win.competition_result[self.competition.name] = "優勝"
             self.competition_result_top.loc[self.competition.name, ["年度", "優勝", "準優勝"]] = [year, f"{win.name}({win.league_name})", f"{lose.name}({lose.league_name})"]
+
+class World_soccer:
+    def __init__(self, country_leagues):
+        self.country_leagues = country_leagues
+
+        self.players_result = pd.DataFrame()
+
+        self.free_players = []
+        self.retire_players = []
+    
+    def play_1season(self, year):
+        # 全リーグ同じチーム数の時、変える必要がある
+        league_calender = create_calender()
+        num_section = len(league_calender)
+
+        # 全カントリーリーグの準備
+        for c in self.country_leagues:
+            c.prepare_1season(year)
+
+        for day in tqdm(range(num_section)):
+            for c in self.country_leagues:
+                if day==int(c.competition.section_interval*c.competition.now_round):
+                    c.play_1competition_section(year)
+                sections = league_calender.iloc[day, :]
+                for l in c.leagues:
+                    l.play_1section(year, sections)
+                
+                if day%5==0:
+                    c.play_holiday()
+        
+        # リーグ成績の計算
+        for c in self.country_leagues:
+            for l in c.leagues:
+                l.cal_1year_result(year)
+        
+        # レンタルリーグ
+        for c in self.country_leagues:
+            all_output = pd.DataFrame()
+            for l in c.leagues:
+                for t in l.teams:
+                    for p in t.not_register_players:
+                        p.contract -= 1
+                        p.grow_up(20)
+                        df_result = rental_player_result(p, year, t.name)
+                        all_output = pd.concat([all_output, df_result])
+
+                        if p.main_position != "GK":
+                            p.select_main_position()
+                        else:
+                            p.main_rate = p.cal_rate()
+                        
+                        # 登録メンバー外の成長が止まった選手は戦力外
+                        if p.age>p.grow_min_age:
+                            p.contract=0
+
+                        p.cal_all_rate()
+                        p.consider_retirement()
+                        p.injury = 0
+            c.players_result = pd.concat([c.players_result, all_output])
+            c.players_result = c.players_result.reset_index(drop=True)
+        
+        # 選手の成績の計算
+        for c in self.country_leagues:
+            c.cal_players_result(year)
+
+        # 昇格降格
+        for c in self.country_leagues:
+            for index in range(len(c.leagues)):
+                season_name = f"{c.leagues[index].name}_{year}"
+                if c.leagues[index].category!="top":
+                    promotion = c.leagues[index].promotion[season_name]
+                    promotion_team = [t for t in c.leagues[index].teams if t.name in promotion]
+                    c.leagues[index].teams = [s for s in c.leagues[index].teams if s not in promotion_team]
+                    c.leagues[index-1].teams.extend(promotion_team)
+
+                if c.leagues[index].category!="lowest":
+                    relegation = c.leagues[index].relegation[season_name]
+                    relegation_team = [t for t in c.leagues[index].teams if t.name in relegation]
+                    c.leagues[index].teams = [s for s in c.leagues[index].teams if s not in relegation_team]
+                    c.leagues[index+1].teams.extend(relegation_team)
+    
+    def play_offseason(self, df_name_list, year):
+        # フリー契約の人
+        if len(self.free_players) > 0:
+            for p in self.free_players:
+                if p.age<=25:
+                    p.grow_up(20)
+                    df_result = parctice_player_result(p, year)
+                    self.players_result = pd.concat([self.players_result, df_result])
+                    p.injury = 0
+                else:
+                    p.grow_up(0)
+                    df_result = self_study_player_result(p, year)
+                    self.players_result = pd.concat([self.players_result, df_result])
+                    p.injury = 0
+                if p.main_position != "GK":
+                    p.select_main_position()
+                else:
+                    p.main_rate = p.cal_rate()
+                p.cal_all_rate()
+
+                p.free_time += 1
+                p.consider_retirement()
+            self.players_result = self.players_result.reset_index(drop=True)
+            retire_player = [p for p in self.free_players if p.retire==1]
+            self.retire_players.extend(retire_player)
+            self.free_players = [p for p in self.free_players if p not in retire_player]
+
+        for c in self.country_leagues:
+            # 引退と契約切れを行う
+            for l in c.leagues:
+                for t in l.teams:
+                    # 引退
+                    retire_player = [p for p in t.affilation_players if p.retire==1]
+                    self.retire_players.extend(retire_player)
+                    t.affilation_players = [p for p in t.affilation_players if p not in retire_player]
+
+                    # 契約切れ
+                    free_players = [p for p in t.affilation_players if p.contract==0]
+                    self.free_players.extend(free_players)
+                    t.affilation_players = [p for p in t.affilation_players if p not in free_players]
+
+                    # リーグのレベルにそぐわない選手を契約切れに
+                    out_players = [p for p in t.affilation_players if p.main_rate>=l.max_rate]
+                    self.free_players.extend(out_players)
+                    t.affilation_players = [p for p in t.affilation_players if p not in out_players]
+
+                    empty_players_pos = {}
+                    empty_players_pos = create_empty_position(empty_players_pos, retire_player)
+                    empty_players_pos = create_empty_position(empty_players_pos, free_players)
+                    empty_players_pos = create_empty_position(empty_players_pos, out_players)
+                    t.empty_position = empty_players_pos
+        
+        random.shuffle(self.free_players)
+
+        count = 0
+        while True:
+            if count > 2:
+                break
+
+            for c in random.sample(self.country_leagues, len(self.country_leagues)):
+                for l in c.leagues:
+                    for t in random.sample(l.teams, len(l.teams)):
+                        # 移籍市場から選手を入団させる
+                        t.set_main_rate_position()
+                        t.set_empty_position(l.standard_rate)
+                        self.free_players = t.get_free_players(self.free_players, l)
+                        lack_num = t.member_num - len(t.affilation_players)
+                        t.set_empty_position_random(lack_num)
+                        self.free_players = t.get_free_players(self.free_players, l)
+                        t.set_main_rate_position()
+                        t.set_register_players_()
+
+                        # 登録外の選手でレンタルにもならない選手を外に出す
+                        out_players = [p for p in t.affilation_players if p.register==0 and p.age>=27]
+                        self.free_players.extend(out_players)
+                        t.affilation_players = [p for p in t.affilation_players if p not in out_players]
+            count+=1
+    
+        for c in self.country_leagues:
+            for l in c.leagues:
+                for t in l.teams:
+                    lack_num = t.member_num - len(t.affilation_players)
+                    t.set_empty_position_random(lack_num, none_gk=True)
+
+                    # 新しく選手を作成する
+                    Cp = Create_player(position_num=t.empty_position, 
+                                        min_rate=40, max_rate=80, 
+                                        age_mean=20,
+                                        now_year=year,
+                                        mean_rate=l.mean_rate,
+                                        df_name_list=df_name_list)
+
+                    Cp.create_teams(new=True)
+                    new_players = Cp.players
+                    t.affilation_players.extend(new_players)
 
 class Create_player:
     def __init__(self, position_num, min_rate, max_rate, age_mean, df_name_list, mean_rate=75, now_year=1900):
@@ -1739,6 +1728,7 @@ class Create_player:
                 continue
             else:
                 break
+        return pos
         """
         while True:
             if pos == "ST":

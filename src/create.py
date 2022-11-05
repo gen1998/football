@@ -25,6 +25,40 @@ def random_create_formation():
                        formation_tired_vitality=select_foramtion['formation_tired_vitality'])
     return output
 
+def create_team(num, team_name_list, player_name_list, 
+                mean_rate=65, min_rate=40, 
+                max_rate=100, age_mean=27, now_year=2000):
+    teams = []
+
+    for index in range(num):
+        mean_rate_ = np.random.normal(mean_rate)
+        Cp = Create_player(position_num={"ST":2, "RW":2, "CAM":2, "RM":2, "CM":4, "CDM":2, "CB":4, "RB":4, "GK":3}, 
+                           min_rate=min_rate, max_rate=max_rate, 
+                           age_mean=age_mean,
+                           mean_rate=mean_rate_,
+                           now_year=now_year,
+                           df_name_list=player_name_list)
+        Cp.create_teams()
+        players = Cp.players
+        Cp = Create_player(position_num={"ST":1, "RW":1, "CM":1, "CB":1, "GK":1}, 
+                           min_rate=min_rate, max_rate=max_rate, 
+                           age_mean=age_mean,
+                           mean_rate=mean_rate_,
+                           now_year=now_year,
+                           df_name_list=player_name_list)
+        
+        Cp.create_teams(new=True)
+        players.extend(Cp.players)
+        formation = random_create_formation()
+        T = Team(name=team_name_list[index], 
+                 formation=formation)
+        
+        T.affilation_players = players
+        teams.append(T)
+
+    return teams
+
+
 """
 def change_players(team, df_name_list):
     retire_player = [p for p in team.affilation_players if p.retire==1]
