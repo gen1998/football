@@ -10,11 +10,11 @@ from IPython.core.display import display
 
 import uuid
 
-def print_player(ProLeague, all_member, uuid_):
+def print_player(WorldLeague, all_member, uuid_):
     member = all_member[all_member.uuid==uuid.UUID(f"{uuid_}")]
     display(member[['名前', '年齢', '生まれ年', '成長タイプ']])
 
-    output = ProLeague.players_result
+    output = WorldLeague.players_result
     output = output[output.uuid==uuid.UUID(f"{uuid_}")]
     #output = output[output["分類"]=="リーグ"]
     output = output.reset_index(drop=True)
@@ -48,12 +48,13 @@ def print_player(ProLeague, all_member, uuid_):
             count+=3
         t_name_b = t_name
     
-    for l in ProLeague.leagues:
-        buff = output[output["リーグ"]==l.name]
-        if len(buff)>0:
-            result_txt = f'{buff["試合数"].sum()}({buff["goal"].sum()})'
-            plt.text(0, 15-count, f"  {l.name}   {result_txt}")
-            count+=1
+    for c in WorldLeague.country_leagues:
+        for l in c.leagues:
+            buff = output[output["リーグ"]==l.name]
+            if len(buff)>0:
+                result_txt = f'{buff["試合数"].sum()}({buff["goal"].sum()})'
+                plt.text(0, 15-count, f"  {l.name}   {result_txt}")
+                count+=1
 
     plt.subplot(1, 4, 2)
     plt.axis([0,15,0,15]) 
@@ -73,9 +74,9 @@ def print_player(ProLeague, all_member, uuid_):
     plt.ylabel("Rate")
 
     if all_member[all_member.uuid == uuid.UUID(uuid_)]["進退"].values[0] == "引退":
-        player = [p for p in ProLeague.retire_players if p.uuid == uuid.UUID(uuid_)][0]
+        player = [p for p in WorldLeague.retire_players if p.uuid == uuid.UUID(uuid_)][0]
     else:
-        l = [l for l in ProLeague.leagues if l.name==all_member[all_member.uuid == uuid.UUID(uuid_)]["リーグ"].values[0]][0]
+        l = [l for c in WorldLeague.country_leagues for l in c.leagues if l.name==all_member[all_member.uuid == uuid.UUID(uuid_)]["リーグ"].values[0]][0]
         t = [t for t in l.teams if t.name==all_member[all_member.uuid == uuid.UUID(uuid_)]["チーム"].values[0]][0]
         player = [p for p in t.affilation_players if p.uuid == uuid.UUID(uuid_)][0]
 
@@ -85,7 +86,7 @@ def print_player(ProLeague, all_member, uuid_):
 
     plt.show()
 
-    output = ProLeague.players_result
+    output = WorldLeague.players_result
     output = output[output.uuid==uuid.UUID(f"{uuid_}")]
     output = output[output["分類"]!="カップ戦"]
     display(output)
