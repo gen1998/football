@@ -884,7 +884,7 @@ class Game:
         
         for p in self.away.formation.players_flat:
             p.vitality -= self.away.formation.formation_tired_vitality[p.partification_position]/self.moment_num
-            p.get_game_time(self.competition_name, np.int8(90/self.moment_num))
+            p.get_game_time(self.competition_name, 90/self.moment_num)
         
         if self.now_time<self.moment_num:
             self.change_player()
