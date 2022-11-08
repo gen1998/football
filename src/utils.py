@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import cv2
 
 import random
 import uuid
@@ -74,6 +75,7 @@ def parctice_player_result(player, year):
                            "ポジション":[player.main_position],
                            "リーグ":["practice_league"],
                            "年度":[year],
+                           "国":["rental"], 
                            "チーム":["practice_team"],
                            "レンタル元":[""],
                            "分類":["練習リーグ"],
@@ -99,6 +101,7 @@ def rental_player_result(player, year, team_name):
                            "ポジション":[player.main_position],
                            "リーグ":["rental_league"],
                            "年度":[year],
+                           "国":["rental"], 
                            "チーム":["rental_team"],
                            "レンタル元":[team_name],
                            "分類":["レンタルリーグ"],
@@ -122,6 +125,7 @@ def self_study_player_result(player, year):
                            "Rate":[player.main_rate],
                            "残契約":[0],
                            "ポジション":[player.main_position],
+                           "国":["rental"], 
                            "リーグ":["所属なし"],
                            "年度":[year],
                            "チーム":["所属なし"],
@@ -138,3 +142,28 @@ def self_study_player_result(player, year):
                            "全ポジション回数":[""],
     })
     return output
+
+def team_count(output):
+    result = output[output["分類"]!="カップ戦"]["チーム"].values
+
+    count = 1
+    c = result[0]
+
+    for r in result:
+        if c!=r:
+            count+=1
+            c=r
+    
+    return count
+
+def country_img(name):
+    img = cv2.imread(f"../../data/img/{name}.png")
+    img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGB)
+    img = cv2.resize(img, (260, 173))
+    img_ = img.copy()
+    white = np.full_like(img, 255)
+
+    for i in range(3):
+        img_ = cv2.hconcat([white, img_])
+    
+    return img, img_
