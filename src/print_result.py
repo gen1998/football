@@ -5,6 +5,7 @@ import japanize_matplotlib
 import math
 
 from src.object import FieldPlayer
+from src.utils import team_count, country_img
 
 from IPython.core.display import display
 
@@ -19,35 +20,59 @@ def print_player(WorldLeague, all_member, uuid_):
     #output = output[output["分類"]=="リーグ"]
     output = output.reset_index(drop=True)
     t_name_b = ""
-    plt.figure(figsize = (12, 3)) # 図のサイズ指定
-    plt.subplot(1, 4, 1)
-    plt.axis([0,15,0,15]) 
-    plt.axis("off")
+    team_c = team_count(output)
+    plt.figure(figsize = (12, team_c*0.3)) # 図のサイズ指定
+        
     count = 0
+    index = 0
     for i, row in output.iterrows():
         t_name = row["チーム"]
+        c_name = row["国"]
         if i==0:
             t_name_b = row["チーム"]
+            c_name_b = row["国"]
             t_s = row["年度"]
             t_i = 0
         if t_name!=t_name_b:
             result_txt = f'{output.loc[t_i:i-1, "試合数"].sum()}({output.loc[t_i:i-1, "goal"].sum()})'
+            plt.subplot(team_c, 1, index+1)
+            plt.axis("off")
+            img, img_ = country_img(c_name_b)
             if t_s == row["年度"]-1:
-                plt.text(0, 15-count, f"  {t_s}   {t_name_b.ljust(10)} {result_txt}")
+                plt.text(0, int(img.shape[0]*0.8), f"    {t_s}", size=11)
+                #plt.text(0, 15-count, f"  {t_s}   {t_name_b.ljust(10)} {result_txt}")
             else:
-                plt.text(0, 15-count, f"  {t_s}-{row['年度']-1}   {t_name_b.ljust(10)} {result_txt}")
+                plt.text(0, int(img.shape[0]*0.8), f"{t_s}-{row['年度']-1}", size=11)
+                #plt.text(0, 15-count, f"  {t_s}-{row['年度']-1}   {t_name_b.ljust(10)} {result_txt}")
+            plt.imshow(img_)
+            plt.text(int(4.3*img.shape[1]), int(img.shape[0]*0.8), f"{t_name_b}", size=11)
+            plt.text(int(8.3*img.shape[1]), int(img.shape[0]*0.8), f"{result_txt}", size=11)
             t_s = row["年度"]
             t_i = i
             count += 1
+            index+=1
         if i==len(output)-1:
             result_txt = f'{output.loc[t_i:i, "試合数"].sum()}({output.loc[t_i:i, "goal"].sum()})'
+            plt.subplot(team_c, 1, index+1)
+            plt.axis("off")
+            img, img_ = country_img(c_name_b)
             if t_s == row["年度"]:
-                plt.text(0, 15-count, f"  {t_s}   {t_name.ljust(10)} {result_txt}")
+                plt.text(0, int(img.shape[0]*0.8), f"    {t_s}  ", size=11)
+                #plt.text(0, 15-count, f"  {t_s}   {t_name.ljust(10)} {result_txt}")
             else:
-                plt.text(0, 15-count, f"  {t_s}-{row['年度']}   {t_name.ljust(10)} {result_txt}")
+                plt.text(0, int(img.shape[0]*0.8), f"{t_s}-{row['年度']}", size=11)
+                #plt.text(0, 15-count, f"  {t_s}-{row['年度']}   {t_name.ljust(10)} {result_txt}")
+            plt.imshow(img_)
+            plt.text(int(4.3*img.shape[1]), int(img.shape[0]*0.8), f"{t_name_b}", size=11)
+            plt.text(int(8.3*img.shape[1]), int(img.shape[0]*0.8), f"{result_txt}", size=11)
             count+=3
+            index+=1
         t_name_b = t_name
+        c_name_b = c_name
     
+    plt.show()
+    
+    """
     for c in WorldLeague.country_leagues:
         for l in c.leagues:
             buff = output[output["リーグ"]==l.name]
@@ -55,8 +80,10 @@ def print_player(WorldLeague, all_member, uuid_):
                 result_txt = f'{buff["試合数"].sum()}({buff["goal"].sum()})'
                 plt.text(0, 15-count, f"  {l.name}   {result_txt}")
                 count+=1
-
-    plt.subplot(1, 4, 2)
+    """
+    
+    plt.figure(figsize = (12, 3))
+    plt.subplot(1, 3, 1)
     plt.axis([0,15,0,15]) 
     plt.axis("off")
     count=0
@@ -65,7 +92,7 @@ def print_player(WorldLeague, all_member, uuid_):
             plt.text(0, 15-count, f"{row}")
             count += 1
 
-    plt.subplot(1, 4, 3)
+    plt.subplot(1, 3, 2)
     plt.plot(output["年齢"], output["Rate"])
     plt.title("Rate変動")
     plt.xlim([output["年齢"].min()-2, output["年齢"].max()+2])
@@ -81,7 +108,7 @@ def print_player(WorldLeague, all_member, uuid_):
         player = [p for p in t.affilation_players if p.uuid == uuid.UUID(uuid_)][0]
 
     if player.main_position!="GK":
-        plt.subplot(1, 4, 4)
+        plt.subplot(1, 3, 3)
         print_rate(player)
 
     plt.show()
