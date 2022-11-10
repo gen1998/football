@@ -46,7 +46,7 @@ def print_player(WorldLeague, all_member, uuid_):
                 #plt.text(0, 15-count, f"  {t_s}-{row['年度']-1}   {t_name_b.ljust(10)} {result_txt}")
             plt.imshow(img_)
             plt.text(int(4.3*img.shape[1]), int(img.shape[0]*0.8), f"{t_name_b}", size=11)
-            plt.text(int(8.3*img.shape[1]), int(img.shape[0]*0.8), f"{result_txt}", size=11)
+            plt.text(int(9.3*img.shape[1]), int(img.shape[0]*0.8), f"{result_txt}", size=11)
             t_s = row["年度"]
             t_i = i
             count += 1
