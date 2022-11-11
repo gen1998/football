@@ -50,6 +50,10 @@ class FootBaller:
         self.partification_position = None
         self.startup = 0
 
+        self.rental = 0
+        self.origin_team = None
+        self.origin_team_name = ""
+
     def get_goal(self, season_name):
         self.result[season_name]["goal"] += 1
     
@@ -95,8 +99,9 @@ class FootBaller:
         self.age += 1
 
     def set_contract(self):
-        self.free_time = 0
-        self.contract = min(max(np.int8(np.round(np.random.normal((40 - self.age)/4, 0.5))), 1), 7)
+        if self.rental!=1:
+            self.free_time = 0
+            self.contract = min(max(np.int8(np.round(np.random.normal((40 - self.age)/4, 0.5))), 1), 7)
 
 class FieldPlayer(FootBaller):
     def __init__(self, name, age, now_year, position, pace, shooting, 
@@ -1182,7 +1187,7 @@ class CountryLeague:
                                         "リーグ":[l.name for i in range(len(t.register_players))],
                                         "年度":[result["年度"] for result in season_result],
                                         "チーム":[t.name for i in range(len(t.register_players))],
-                                        "レンタル元":["" for i in range(len(t.register_players))],
+                                        "レンタル元":[p.origin_team_name for p in t.register_players],
                                         "分類":[result["分類"] for result in season_result],
                                         "順位" :  [f"{league_rank.index(t.name)+1}位" for i in range(len(t.register_players))],
                                         "試合数":[result["試合数"] for result in season_result],
@@ -1206,7 +1211,7 @@ class CountryLeague:
                                         "年度":[result["年度"] for result in competition_result],
                                         "国":[self.name for i in range(len(t.register_players))],
                                         "チーム":[t.name for i in range(len(t.register_players))],
-                                        "レンタル元":["" for i in range(len(t.register_players))],
+                                        "レンタル元":[p.origin_team_name for p in t.register_players],
                                         "分類":[result["分類"] for result in competition_result],
                                         "順位" :  [f"{league_rank.index(t.name)+1}位" for i in range(len(t.register_players))],
                                         "試合数":[result["試合数"] for result in competition_result],
@@ -1226,12 +1231,12 @@ class CountryLeague:
                     p.contract -= 1
 
                     # 再契約する処理
-                    if p.contract == 0 and p.partification_position is not None:
+                    if p.contract == 0 and p.partification_position is not None and p.rental!=1:
                         if np.random.rand()<0.3:
                             p.set_contract()
                     
                     # 試合に出てない人を戦力外にする処理
-                    if p.partification_position is None and p.main_position!="GK":
+                    if p.partification_position is None and p.main_position!="GK" and p.rental!=1:
                         p.contract = 0
                     
                     # 成長
@@ -1404,16 +1409,39 @@ class World_soccer:
             for l in c.leagues:
                 l.cal_1year_result(year)
         
-        # レンタルリーグ
+        # アンダーの練習
         for c in self.country_leagues:
-            all_output = pd.DataFrame()
+            output = pd.DataFrame({"名前":[p.name for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "uuid":[p.uuid for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "年齢":[p.age for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "Rate" : [p.main_rate for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "残契約":[p.contract-1 for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "ポジション":[p.main_position for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "リーグ":["Under League" for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "年度":[year for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "国":[c.name for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "チーム":[f"{t.name}_B" for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "レンタル元":["" for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "分類":["Bチーム" for l in c.leagues for t in l.teams  for p in t.not_register_players],
+                                    "順位" :  [f"記録なし" for l in c.leagues for t in l.teams  for p in t.not_register_players],
+                                    "試合数":[30 for l in c.leagues for t in l.teams  for p in t.not_register_players],
+                                    "出場時間":[1800 for l in c.leagues for t in l.teams  for p in t.not_register_players],
+                                    "goal":[0 for l in c.leagues for t in l.teams  for p in t.not_register_players],
+                                    "assist":[0 for l in c.leagues for t in l.teams  for p in t.not_register_players],
+                                    "CS":[0 for l in c.leagues for t in l.teams  for p in t.not_register_players],
+                                    "怪我欠場":[0 for l in c.leagues for t in l.teams  for p in t.not_register_players],
+                                    "怪我回数":[0 for l in c.leagues for t in l.teams  for p in t.not_register_players],
+                                    "賞":["" for l in c.leagues for t in l.teams  for p in t.not_register_players],
+                                    "全ポジション回数":["" for l in c.leagues for t in l.teams  for p in t.not_register_players],})
+            
+            c.players_result = pd.concat([c.players_result, output])
+            c.players_result = c.players_result.reset_index(drop=True)
+
             for l in c.leagues:
                 for t in l.teams:
                     for p in t.not_register_players:
                         p.contract -= 1
                         p.grow_up(20)
-                        df_result = rental_player_result(p, year, t.name)
-                        all_output = pd.concat([all_output, df_result])
 
                         if p.main_position != "GK":
                             p.select_main_position()
@@ -1421,14 +1449,12 @@ class World_soccer:
                             p.main_rate = p.cal_rate()
                         
                         # 登録メンバー外の成長が止まった選手は戦力外
-                        if p.age>p.grow_min_age:
+                        if p.age>p.grow_min_age and p.rental==0:
                             p.contract=0
 
                         p.cal_all_rate()
                         p.consider_retirement()
                         p.injury = 0
-            c.players_result = pd.concat([c.players_result, all_output])
-            c.players_result = c.players_result.reset_index(drop=True)
         
         # 選手の成績の計算
         for c in self.country_leagues:
@@ -1451,6 +1477,11 @@ class World_soccer:
                     c.leagues[index+1].teams.extend(relegation_team)
     
     def play_offseason(self, df_name_list, year):
+        print("オフシーズン")
+        print("-"*30)
+
+        sum_retire_player = 0
+
         # フリー契約の人
         if len(self.free_players) > 0:
             for p in self.free_players:
@@ -1477,12 +1508,28 @@ class World_soccer:
             self.retire_players.extend(retire_player)
             self.free_players = [p for p in self.free_players if p not in retire_player]
 
+            sum_retire_player += len(retire_player)
+        
+        # レンタル選手を元のチームに戻す
+        for c in self.country_leagues:
+            for l in c.leagues:
+                for t in l.teams:
+                    rental_players = [p for p in t.affilation_players if p.rental==1]
+                    t.affilation_players = [p for p in t.affilation_players if p not in rental_players]
+                    for p in rental_players:
+                        origin_team = p.origin_team
+                        p.rental = 0
+                        p.origin_team = None
+                        p.origin_team_name = ""
+                        origin_team.affilation_players.append(p)
+
         for c in self.country_leagues:
             # 引退と契約切れを行う
             for l in c.leagues:
                 for t in l.teams:
                     # 引退
                     retire_player = [p for p in t.affilation_players if p.retire==1]
+                    sum_retire_player += len(retire_player)
                     self.retire_players.extend(retire_player)
                     t.affilation_players = [p for p in t.affilation_players if p not in retire_player]
 
@@ -1496,11 +1543,15 @@ class World_soccer:
                     self.free_players.extend(out_players)
                     t.affilation_players = [p for p in t.affilation_players if p not in out_players]
 
-                    empty_players_pos = {}
-                    empty_players_pos = create_empty_position(empty_players_pos, retire_player)
-                    empty_players_pos = create_empty_position(empty_players_pos, free_players)
-                    empty_players_pos = create_empty_position(empty_players_pos, out_players)
-                    t.empty_position = empty_players_pos
+                    # リーグのレベル以下の選手をレンタル選手に
+                    # TODO:のちのちレベル以下も試合に出場したりできるように、誰をレンタルにするかもっと考慮できるシステムを
+                    rental_players = [p for p in t.affilation_players if p.main_rate<l.min_rate]
+                    set_rental_transfer(rental_players, t)
+                    self.free_players.extend(rental_players)
+                    t.affilation_players = [p for p in t.affilation_players if p not in rental_players]
+        
+        print(" 引退人数   　: ", sum_retire_player)
+        print(" 移籍市場人数 : ", len(self.free_players))
         
         random.shuffle(self.free_players)
 
@@ -1537,7 +1588,7 @@ class World_soccer:
                     # 新しく選手を作成する
                     Cp = Create_player(position_num=t.empty_position, 
                                         min_rate=40, max_rate=80, 
-                                        age_mean=20,
+                                        age_mean=19,
                                         now_year=year,
                                         mean_rate=l.mean_rate,
                                         df_name_list=df_name_list)
