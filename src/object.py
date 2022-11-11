@@ -803,6 +803,7 @@ class Game:
     def cal_goal_assit_player(self, side):
         # goal
         a = np.array([s.shooting for s in side.formation.players_flat])
+        a = np.maximum(a-np.max(a)/2, 5)
         b = np.array(side.formation.formation_shooting_rate)
         weights = a*b/sum(a*b)
         np.random.choice(side.formation.players_flat, 1, p=weights)[0].get_goal(self.competition_name)
@@ -810,6 +811,7 @@ class Game:
         # asssit
         if np.random.randn() > 0:
             a = np.array([s.passing for s in side.formation.players_flat])
+            a = np.maximum(a-np.max(a)/2, 5)
             b = np.array(side.formation.formation_assist_rate)
             weights = a*b/sum(a*b)
             np.random.choice(side.formation.players_flat, 1, p=weights)[0].get_assist(self.competition_name)
