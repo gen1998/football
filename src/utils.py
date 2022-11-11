@@ -66,6 +66,12 @@ def search_player(ProLeague, all_member, uuid_):
         player = [p for p in t.affilation_players if p.uuid == uuid.UUID(uuid_)][0]
     return player
 
+def set_rental_transfer(rental_players, t):
+    for p in rental_players:
+        p.rental = 1
+        p.origin_team = t
+        p.origin_team_name = t.name
+
 def parctice_player_result(player, year):
     output = pd.DataFrame({"名前":[player.name],
                            "uuid":[player.uuid],
@@ -156,7 +162,7 @@ def team_count(output):
     
     return count
 
-def country_img(name):
+def country_img(name, rental=False):
     img = cv2.imread(f"../../data/img/{name}.png")
     img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGB)
     img = cv2.resize(img, (260, 173))
@@ -164,6 +170,9 @@ def country_img(name):
     white = np.full_like(img, 255)
 
     for i in range(3):
+        img_ = cv2.hconcat([white, img_])
+    
+    if rental==True:
         img_ = cv2.hconcat([white, img_])
     
     return img, img_

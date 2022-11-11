@@ -28,25 +28,35 @@ def print_player(WorldLeague, all_member, uuid_):
     for i, row in output.iterrows():
         t_name = row["チーム"]
         c_name = row["国"]
+        r_name = row["レンタル元"]
         if i==0:
             t_name_b = row["チーム"]
             c_name_b = row["国"]
+            r_name_b = row["レンタル元"]
             t_s = row["年度"]
             t_i = 0
         if t_name!=t_name_b:
             result_txt = f'{output.loc[t_i:i-1, "試合数"].sum()}({output.loc[t_i:i-1, "goal"].sum()})'
             plt.subplot(team_c, 1, index+1)
             plt.axis("off")
-            img, img_ = country_img(c_name_b)
+            if r_name_b == "":
+                img, img_ = country_img(c_name_b)
+            else:
+                img, img_ = country_img(c_name_b, rental=True)
             if t_s == row["年度"]-1:
-                plt.text(0, int(img.shape[0]*0.8), f"    {t_s}", size=11)
+                plt.text(0, int(img.shape[0]*0.8), f"{t_s}-{t_s+1}", size=11)
                 #plt.text(0, 15-count, f"  {t_s}   {t_name_b.ljust(10)} {result_txt}")
             else:
-                plt.text(0, int(img.shape[0]*0.8), f"{t_s}-{row['年度']-1}", size=11)
+                plt.text(0, int(img.shape[0]*0.8), f"{t_s}-{row['年度']}", size=11)
                 #plt.text(0, 15-count, f"  {t_s}-{row['年度']-1}   {t_name_b.ljust(10)} {result_txt}")
             plt.imshow(img_)
-            plt.text(int(4.3*img.shape[1]), int(img.shape[0]*0.8), f"{t_name_b}", size=11)
-            plt.text(int(9.3*img.shape[1]), int(img.shape[0]*0.8), f"{result_txt}", size=11)
+            if r_name_b == "":
+                plt.text(int(4.3*img.shape[1]), int(img.shape[0]*0.8), f"{t_name_b}", size=11)
+                plt.text(int(10.3*img.shape[1]), int(img.shape[0]*0.8), f"{result_txt}", size=11)
+            else:
+                plt.text(int(3.3*img.shape[1]), int(img.shape[0]*0.8), f"→", size=11)
+                plt.text(int(5.3*img.shape[1]), int(img.shape[0]*0.8), f"{t_name_b}", size=11)
+                plt.text(int(10.8*img.shape[1]), int(img.shape[0]*0.8), f"{result_txt}", size=11)
             t_s = row["年度"]
             t_i = i
             count += 1
@@ -55,20 +65,29 @@ def print_player(WorldLeague, all_member, uuid_):
             result_txt = f'{output.loc[t_i:i, "試合数"].sum()}({output.loc[t_i:i, "goal"].sum()})'
             plt.subplot(team_c, 1, index+1)
             plt.axis("off")
-            img, img_ = country_img(c_name_b)
+            if r_name_b == "":
+                img, img_ = country_img(c_name_b)
+            else:
+                img, img_ = country_img(c_name_b, rental=True)
             if t_s == row["年度"]:
-                plt.text(0, int(img.shape[0]*0.8), f"    {t_s}  ", size=11)
+                plt.text(0, int(img.shape[0]*0.8), f"{t_s}-{t_s+1}", size=11)
                 #plt.text(0, 15-count, f"  {t_s}   {t_name.ljust(10)} {result_txt}")
             else:
-                plt.text(0, int(img.shape[0]*0.8), f"{t_s}-{row['年度']}", size=11)
+                plt.text(0, int(img.shape[0]*0.8), f"{t_s}-{row['年度']+1}", size=11)
                 #plt.text(0, 15-count, f"  {t_s}-{row['年度']}   {t_name.ljust(10)} {result_txt}")
             plt.imshow(img_)
-            plt.text(int(4.3*img.shape[1]), int(img.shape[0]*0.8), f"{t_name_b}", size=11)
-            plt.text(int(8.3*img.shape[1]), int(img.shape[0]*0.8), f"{result_txt}", size=11)
+            if r_name_b == "":
+                plt.text(int(4.3*img.shape[1]), int(img.shape[0]*0.8), f"{t_name_b}", size=11)
+                plt.text(int(10.3*img.shape[1]), int(img.shape[0]*0.8), f"{result_txt}", size=11)
+            else:
+                plt.text(int(3.3*img.shape[1]), int(img.shape[0]*0.8), f"→", size=11)
+                plt.text(int(5.3*img.shape[1]), int(img.shape[0]*0.8), f"{t_name_b}", size=11)
+                plt.text(int(10.8*img.shape[1]), int(img.shape[0]*0.8), f"{result_txt}", size=11)
             count+=3
             index+=1
         t_name_b = t_name
         c_name_b = c_name
+        r_name_b = r_name
     
     plt.show()
     
