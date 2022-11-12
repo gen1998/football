@@ -189,3 +189,50 @@ def cal_game_rating_rate(team):
     min_rate = min(partification_rate)
     max_rate = max(partification_rate)
     return min_rate, max_rate
+
+def create_all_member(ws, now_year):
+    output = pd.DataFrame()
+    for c in ws.country_leagues:
+        for l in c.leagues:
+            for t in l.teams:
+                buff = pd.DataFrame({"名前":[p.name for p in t.affilation_players],
+                                     "uuid":[p.uuid for p in t.affilation_players],
+                                     "年齢":[p.age for p in t.affilation_players],
+                                     "生まれ年":[p.born_year for p in t.affilation_players],
+                                     "Rate":[p.main_rate for p in t.affilation_players],
+                                     "成長タイプ":[p.grow_type for p in t.affilation_players],
+                                     "リーグ":[l.name for p in t.affilation_players],
+                                     "チーム":[t.name for p in t.affilation_players],
+                                     "進退":["現役" for p in t.affilation_players],
+                                    })
+                
+                output = pd.concat([output, buff])
+    
+    retire_output = pd.DataFrame({"名前":[p.name for p in ws.retire_players],
+                                  "uuid":[p.uuid for p in ws.retire_players],
+                                  "年齢":[now_year - p.born_year for p in ws.retire_players],
+                                  "生まれ年":[p.born_year for p in ws.retire_players],
+                                  "Rate":[p.main_rate for p in ws.retire_players],
+                                  "成長タイプ":[p.grow_type for p in ws.retire_players],
+                                  "リーグ":["引退" for p in ws.retire_players],
+                                  "チーム":["引退" for p in ws.retire_players],
+                                  "進退":["引退" for p in ws.retire_players],
+                                 })
+    
+    output = pd.concat([output, retire_output])
+    del retire_output
+
+    free_output = pd.DataFrame({"名前":[p.name for p in ws.free_players],
+                                "uuid":[p.uuid for p in ws.free_players],
+                                "年齢":[now_year - p.born_year for p in ws.free_players],
+                                "生まれ年":[p.born_year for p in ws.free_players],
+                                "Rate":[p.main_rate for p in ws.free_players],
+                                "成長タイプ":[p.grow_type for p in ws.free_players],
+                                "リーグ":["フリー" for p in ws.free_players],
+                                "チーム":["フリー" for p in ws.free_players],
+                                "進退":["フリー" for p in ws.free_players],
+                                })
+    
+    output = pd.concat([output, free_output])
+    output = output.reset_index(drop=True)
+    return output
