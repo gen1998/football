@@ -1329,7 +1329,7 @@ class CountryLeague:
             df_search_index = df_search.loc[df_search["goal"]==df_search["goal"].max(), :].index.tolist()
             l.champion.loc[season_name, "得点王"] = ""
             for index in df_search_index:
-                all_output.loc[index, "賞"] += f"得点王({season_name}), "
+                all_output.loc[index, "賞"] += f"得点王({season_name}),"
                 l.champion.loc[season_name, "得点王"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
             l.champion.loc[season_name, "得点王"] += f"  /  {df_search.loc[index, 'goal']}点"
 
@@ -1338,7 +1338,7 @@ class CountryLeague:
             df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
             l.champion.loc[season_name, "MVP"] = ""
             for index in df_search_index[:1]:
-                all_output.loc[index, "賞"] += f"MVP({season_name}), "
+                all_output.loc[index, "賞"] += f"MVP({season_name}),"
                 l.champion.loc[season_name, "MVP"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
             
             #若手MVP
@@ -1346,7 +1346,7 @@ class CountryLeague:
             df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
             l.champion.loc[season_name, "yMVP"] = ""
             for index in df_search_index[:1]:
-                all_output.loc[index, "賞"] += f"yMVP({season_name}), "
+                all_output.loc[index, "賞"] += f"yMVP({season_name}),"
                 l.champion.loc[season_name, "yMVP"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
         
         # コンペティション最多得点
@@ -1355,7 +1355,7 @@ class CountryLeague:
         df_search_index = df_search.loc[df_search["goal"]==df_search["goal"].max(), :].index.tolist()
         self.competition_result_top.loc[self.competition.name, "得点王"] = ""
         for index in df_search_index:
-            all_output.loc[index, "賞"] += f"得点王({self.competition.name}), "
+            all_output.loc[index, "賞"] += f"得点王({self.competition.name}),"
             self.competition_result_top.loc[self.competition.name, "得点王"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}({df_search.loc[index, 'リーグ']})), "  
         self.competition_result_top.loc[self.competition.name, "得点王"] += f"/  {df_search.loc[index, 'goal']}点"
 
