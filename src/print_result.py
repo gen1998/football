@@ -108,8 +108,10 @@ def print_player(WorldLeague, all_member, uuid_):
     count=0
     for row in output["賞"]:
         if row != "":
-            plt.text(0, 15-count, f"{row}")
-            count += 1
+            for r in row.split(","):
+                if r != "":
+                    plt.text(0, 15-count, f"{r}")
+                    count += 1
 
     plt.subplot(1, 3, 2)
     plt.plot(output["年齢"], output["Rate"])
