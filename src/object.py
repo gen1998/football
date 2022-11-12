@@ -1074,7 +1074,7 @@ class League:
 
         self.team_result = {}
         self.player_result = {}
-        self.champion = pd.DataFrame(columns=["優勝", "得点王", "MVP"])
+        self.champion = pd.DataFrame(columns=["優勝", "得点王", "MVP", "yMVP"])
         
         self.relegation = {}
         self.relegation_num = relegation_num
@@ -1340,6 +1340,14 @@ class CountryLeague:
             for index in df_search_index[:1]:
                 all_output.loc[index, "賞"] += f"MVP({season_name}), "
                 l.champion.loc[season_name, "MVP"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
+            
+            #若手MVP
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>l.num*90*0.5)&(all_output["年齢"]<24))]
+            df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
+            l.champion.loc[season_name, "yMVP"] = ""
+            for index in df_search_index[:1]:
+                all_output.loc[index, "賞"] += f"yMVP({season_name}), "
+                l.champion.loc[season_name, "yMVP"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
         
         # コンペティション最多得点
         all_output = all_output.reset_index(drop=True)
