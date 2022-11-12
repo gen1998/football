@@ -837,7 +837,7 @@ class Game:
         goal_player.get_goal(self.competition_name)
         
         # asssit
-        if np.random.rand()>0.3:
+        if np.random.rand()>0.4:
             a = np.array([s.passing for s in side.formation.players_flat])
             a = np.maximum(a-np.max(a)/2, 5)
             b = np.array(side.formation.formation_assist_rate)
@@ -846,7 +846,7 @@ class Game:
                 assist_player = np.random.choice(side.formation.players_flat, 1, p=weights)[0]
                 if assist_player!=goal_player:
                     break
-            goal_player.get_assist(self.competition_name)
+            assist_player.get_assist(self.competition_name)
     
     # 途中交代
     def change_player(self):
@@ -1334,7 +1334,7 @@ class CountryLeague:
             l.champion.loc[season_name, "得点王"] += f"  /  {df_search.loc[index, 'goal']}点"
 
             #リーグMVP
-            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>l.num*90*0.7))]
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.7))]
             df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
             l.champion.loc[season_name, "MVP"] = ""
             for index in df_search_index[:1]:
@@ -1342,7 +1342,7 @@ class CountryLeague:
                 l.champion.loc[season_name, "MVP"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
             
             #若手MVP
-            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>l.num*90*0.5)&(all_output["年齢"]<24))]
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.5)&(all_output["年齢"]<24))]
             df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
             l.champion.loc[season_name, "yMVP"] = ""
             for index in df_search_index[:1]:
