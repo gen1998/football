@@ -107,7 +107,7 @@ def print_player(WorldLeague, all_member, uuid_):
     plt.axis("off")
     count=0
     for row in output["賞"]:
-        if row != "":
+        if row != "" or row != " ":
             for r in row.split(","):
                 if r != "":
                     plt.text(0, 15-count, f"{r}")
