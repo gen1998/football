@@ -91,6 +91,8 @@ def parctice_player_result(player, year):
                            "goal":[0],
                            "assist":[0],
                            "CS":[0],
+                           "評価点":[0],
+                           "MOM":[0],
                            "怪我欠場":[0],
                            "怪我回数":[0],
                            "賞":[""],
@@ -117,6 +119,8 @@ def rental_player_result(player, year, team_name):
                            "goal":[0],
                            "assist":[0],
                            "CS":[0],
+                           "評価点":[0],
+                           "MOM":[0],
                            "怪我欠場":[0],
                            "怪我回数":[0],
                            "賞":[""],
@@ -135,6 +139,7 @@ def self_study_player_result(player, year):
                            "リーグ":["所属なし"],
                            "年度":[year],
                            "チーム":["所属なし"],
+                           "レンタル元":[""],
                            "分類":["自主練"],
                            "順位":["記録なし"],
                            "試合数":[0],
@@ -142,6 +147,8 @@ def self_study_player_result(player, year):
                            "goal":[0],
                            "assist":[0],
                            "CS":[0],
+                           "評価点":[0],
+                           "MOM":[0],
                            "怪我欠場":[0],
                            "怪我回数":[0],
                            "賞":[""],
@@ -176,3 +183,9 @@ def country_img(name, rental=False):
         img_ = cv2.hconcat([white, img_])
     
     return img, img_
+
+def cal_game_rating_rate(team):
+    partification_rate = [p.position_all_rate[p.partification_position] for p in team.affilation_players if p.partification==1]
+    min_rate = min(partification_rate)
+    max_rate = max(partification_rate)
+    return min_rate, max_rate
