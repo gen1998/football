@@ -46,6 +46,11 @@ class FootBaller:
         self.vitality = 100
         self.recovery_power = recovery_power
 
+        self.today_playing_time = 0
+        self.today_goal = 0
+        self.today_assist = 0
+        self.today_rating = 0
+
         self.partification = 0
         self.partification_position = None
         self.startup = 0
@@ -55,9 +60,11 @@ class FootBaller:
         self.origin_team_name = ""
 
     def get_goal(self, season_name):
+        self.today_goal += 1
         self.result[season_name]["goal"] += 1
     
     def get_assist(self, season_name):
+        self.today_assist += 1
         self.result[season_name]["assist"] += 1
     
     def get_game_count(self, season_name):
@@ -73,6 +80,7 @@ class FootBaller:
         self.result[season_name]["怪我回数"] += 1
     
     def get_game_time(self, season_name, minute):
+        self.today_playing_time += minute
         self.result[season_name]["出場時間"] += minute
     
     def get_position(self, season_name, position):
@@ -81,11 +89,30 @@ class FootBaller:
         else:
             self.result[season_name]["ポジション"][position] = 1
     
+    def get_man_of_the_match(self, season_name):
+        self.result[season_name]["MOM"] += 1
+    
     def recovery_vitality(self, off=False):
         if off:
             self.vitality = 100
         else:
             self.vitality = min(self.vitality+self.recovery_power, 100)
+    
+    def set_game_variable(self):
+        self.today_goal = 0
+        self.today_assist = 0
+        self.today_playing_time = 0
+        self.today_rating = 0
+    
+    def cal_rating(self, season_name, min_rate, max_rate, enemy_goal, result, all_time=90):
+        random_rating = (self.position_all_rate[self.partification_position]-min_rate)/(max_rate-min_rate)*self.today_playing_time/all_time*min(np.random.normal(0.7, 0.2), 1.0)
+        rating = 5.0+self.today_goal+self.today_assist*1.2+result+random_rating
+
+        if self.partification_position in ["LB", "RB", "CB", "CDM", "GK"] and enemy_goal==0:
+            rating+=1
+        rating = min(rating, 10)
+        self.today_rating = rating
+        self.result[season_name]["合計評価点"] += rating
     
     def consider_retirement(self):
         if self.retire!=1 and self.main_rate<80:
@@ -803,18 +830,23 @@ class Game:
     def cal_goal_assit_player(self, side):
         # goal
         a = np.array([s.shooting for s in side.formation.players_flat])
-        a = np.maximum(a-np.max(a)/2, 5)
+        a = np.maximum(a-np.max(a)/2, 10)
         b = np.array(side.formation.formation_shooting_rate)
         weights = a*b/sum(a*b)
-        np.random.choice(side.formation.players_flat, 1, p=weights)[0].get_goal(self.competition_name)
+        goal_player = np.random.choice(side.formation.players_flat, 1, p=weights)[0]
+        goal_player.get_goal(self.competition_name)
         
         # asssit
-        if np.random.randn() > 0:
+        if np.random.rand()>0.3:
             a = np.array([s.passing for s in side.formation.players_flat])
             a = np.maximum(a-np.max(a)/2, 5)
             b = np.array(side.formation.formation_assist_rate)
             weights = a*b/sum(a*b)
-            np.random.choice(side.formation.players_flat, 1, p=weights)[0].get_assist(self.competition_name)
+            while True:
+                assist_player = np.random.choice(side.formation.players_flat, 1, p=weights)[0]
+                if assist_player!=goal_player:
+                    break
+            goal_player.get_assist(self.competition_name)
     
     # 途中交代
     def change_player(self):
@@ -823,8 +855,8 @@ class Game:
             change_num = min(len(tired_player), REPLACEMENT_MAX-self.home_replacement)
             if change_num>0:
                 change_player = tired_player[:change_num]
-                for p in change_player:
-                    pos = p.partification_position
+                for c_p in change_player:
+                    pos = c_p.partification_position
                     bench_player = [p for p in self.home.register_players if p.partification==0 and p.injury<1 and p.vitality>=30]
                     if len(bench_player)<1:
                         break
@@ -834,7 +866,7 @@ class Game:
                     new_player.get_game_count(self.competition_name)
                     new_player.get_position(self.competition_name, pos)
                     self.home.formation.players[pos].append(new_player)
-                    self.home.formation.players[pos].remove(p)
+                    self.home.formation.players[pos].remove(c_p)
                     self.home.formation.players_flat = []
                     for fps in self.home.formation.players.values():
                         self.home.formation.players_flat.extend(fps)
@@ -846,8 +878,8 @@ class Game:
             change_num = min(len(tired_player), REPLACEMENT_MAX-self.away_replacement)
             change_player = tired_player[:change_num]
             if change_num>0:
-                for p in change_player:
-                    pos = p.partification_position
+                for c_p in change_player:
+                    pos = c_p.partification_position
                     bench_player = [p for p in self.away.register_players if p.partification==0 and p.injury<1 and p.vitality>=30]
                     if len(bench_player)<1:
                         break
@@ -857,7 +889,7 @@ class Game:
                     new_player.get_game_count(self.competition_name)
                     new_player.get_position(self.competition_name, pos)
                     self.away.formation.players[pos].append(new_player)
-                    self.away.formation.players[pos].remove(p)
+                    self.away.formation.players[pos].remove(c_p)
                     self.away.formation.players_flat = []
                     for fps in self.away.formation.players.values():
                         self.away.formation.players_flat.extend(fps)
@@ -900,6 +932,8 @@ class Game:
         self.home_goal = 0
         self.away_goal = 0
 
+        all_time = 90
+
         # 試合数・ポジションカウント
         for p in self.home.formation.players_flat:
             p.get_game_count(self.competition_name)
@@ -921,6 +955,7 @@ class Game:
         elif self.extra==1 or self.pk==1:
             #延長戦
             if self.extra==1:
+                all_time = 120
                 for i in range(int(self.moment_num/3)):
                     self.moment_battle()
             
@@ -997,11 +1032,34 @@ class Game:
                     if p.injury > 30 and p.age > p.grow_old_age_1 and np.random.rand()<0.5:
                         p.retire = 1
 
+        min_rate, max_rate=cal_game_rating_rate(self.home)
+        if self.result=="home":
+            easy_result = 1
+        elif self.result=="away":
+            easy_result = -1
+        else:
+            easy_result = 0
         for p in self.home.register_players:
             p.recovery_vitality()
+            if p.partification==1:
+                p.cal_rating(self.competition_name, min_rate, max_rate, self.away_goal, easy_result, all_time)
         
+        min_rate, max_rate=cal_game_rating_rate(self.away)
+        if self.result=="home":
+            easy_result = -1
+        elif self.result=="away":
+            easy_result = 1
+        else:
+            easy_result = 0
         for p in self.away.register_players:
             p.recovery_vitality()
+            if p.partification==1:
+                p.cal_rating(self.competition_name, min_rate, max_rate, self.home_goal, easy_result, all_time)
+
+        all_game_player = self.home.register_players.copy()
+        all_game_player.extend(self.away.register_players)
+        p = max(all_game_player ,key=lambda x:x.today_rating)
+        p.get_man_of_the_match(self.competition_name)
 
 class League:
     def __init__(self, name, teams, num, category, relegation_num=0, promotion_num=0, min_rate=75, max_rate=85, mean_rate=80, standard_rate=78):
@@ -1016,7 +1074,7 @@ class League:
 
         self.team_result = {}
         self.player_result = {}
-        self.champion = pd.DataFrame(columns=["優勝", "得点王"])
+        self.champion = pd.DataFrame(columns=["優勝", "得点王", "MVP"])
         
         self.relegation = {}
         self.relegation_num = relegation_num
@@ -1043,6 +1101,8 @@ class League:
                 p.result[competition_name]["怪我欠場"] = 0
                 p.result[competition_name]["怪我回数"] = 0
                 p.result[competition_name]["出場時間"] = 0
+                p.result[competition_name]["合計評価点"] = 0
+                p.result[competition_name]["MOM"] = 0
                 p.result[competition_name]["ポジション"] = {}
                 p.result[competition_name]["ポジション"][p.main_position] = 0
                 p.recovery_vitality(off=True)
@@ -1083,10 +1143,12 @@ class League:
         for section in sections:
             # 怪我を一つ進める
             for p in self.teams[section[0]-1].register_players:
+                p.set_game_variable()
                 if p.injury>0:
                     p.injury -= 1
                     p.get_default(season_name)
             for p in self.teams[section[1]-1].register_players:
+                p.set_game_variable()
                 if p.injury>0:
                     p.injury -= 1
                     p.get_default(season_name)
@@ -1166,6 +1228,7 @@ class CountryLeague:
         for l in self.leagues:
             for t in l.teams:
                 for p in t.affilation_players:
+                    p.today_playing_time = 0
                     p.partification = 0
                     p.partification_position = None
     
@@ -1197,6 +1260,8 @@ class CountryLeague:
                                         "goal":[result["goal"] for result in season_result],
                                         "assist":[result["assist"] for result in season_result],
                                         "CS":[result["CS"] for result in season_result],
+                                        "評価点":[result["合計評価点"]/result["試合数"] if result["試合数"]>0 else 0 for result in season_result],
+                                        "MOM":[result["MOM"] for result in season_result],
                                         "怪我欠場":[result["怪我欠場"] for result in season_result],
                                         "怪我回数":[result["怪我回数"] for result in season_result],
                                         "賞":["" for i in range(len(t.register_players))],
@@ -1221,6 +1286,8 @@ class CountryLeague:
                                         "goal":[result["goal"] for result in competition_result],
                                         "assist":[result["assist"] for result in competition_result],
                                         "CS":[result["CS"] for result in competition_result],
+                                        "評価点":[result["合計評価点"]/result["試合数"] if result["試合数"]>0 else 0 for result in competition_result],
+                                        "MOM":[result["MOM"] for result in competition_result],
                                         "怪我欠場":[result["怪我欠場"] for result in competition_result],
                                         "怪我回数":[result["怪我回数"] for result in competition_result],
                                         "賞":["" for i in range(len(t.register_players))],
@@ -1265,6 +1332,14 @@ class CountryLeague:
                 all_output.loc[index, "賞"] += f"得点王({season_name}), "
                 l.champion.loc[season_name, "得点王"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
             l.champion.loc[season_name, "得点王"] += f"  /  {df_search.loc[index, 'goal']}点"
+
+            #リーグMVP
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>l.num*90*0.7))]
+            df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
+            l.champion.loc[season_name, "MVP"] = ""
+            for index in df_search_index[:1]:
+                all_output.loc[index, "賞"] += f"MVP({season_name}), "
+                l.champion.loc[season_name, "MVP"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
         
         # コンペティション最多得点
         all_output = all_output.reset_index(drop=True)
@@ -1318,10 +1393,12 @@ class CountryLeague:
 
             # 怪我を一つ進める
             for p in game_team[0].register_players:
+                p.set_game_variable()
                 if p.injury>0:
                     p.injury -= 1
                     p.get_default(self.competition.name)
             for p in game_team[1].register_players:
+                p.set_game_variable()
                 if p.injury>0:
                     p.injury -= 1
                     p.get_default(self.competition.name)
@@ -1431,6 +1508,8 @@ class World_soccer:
                                     "goal":[0 for l in c.leagues for t in l.teams  for p in t.not_register_players],
                                     "assist":[0 for l in c.leagues for t in l.teams  for p in t.not_register_players],
                                     "CS":[0 for l in c.leagues for t in l.teams  for p in t.not_register_players],
+                                    "評価点":[0 for l in c.leagues for t in l.teams  for p in t.not_register_players],
+                                    "MOM":[0 for l in c.leagues for t in l.teams  for p in t.not_register_players],
                                     "怪我欠場":[0 for l in c.leagues for t in l.teams  for p in t.not_register_players],
                                     "怪我回数":[0 for l in c.leagues for t in l.teams  for p in t.not_register_players],
                                     "賞":["" for l in c.leagues for t in l.teams  for p in t.not_register_players],
@@ -1487,6 +1566,7 @@ class World_soccer:
         # フリー契約の人
         if len(self.free_players) > 0:
             for p in self.free_players:
+                # TODO:ここ変えたい
                 if p.age<=25:
                     p.grow_up(20)
                     df_result = parctice_player_result(p, year)
