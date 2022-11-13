@@ -1710,6 +1710,7 @@ class World_soccer:
         
         # 移籍市場からレンタル選手を元のチームに戻す
         rental_players = [p for p in self.free_players if p.rental==1]
+        self.free_players = [p for p in self.free_players if p not in rental_players]
         for p in rental_players:
             origin_team = p.origin_team
             p.rental = 0
