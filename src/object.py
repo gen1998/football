@@ -58,6 +58,7 @@ class FootBaller:
         self.rental = 0
         self.origin_team = None
         self.origin_team_name = ""
+        self.b_team_count = 0
 
     def get_goal(self, season_name):
         self.today_goal += 1
@@ -128,6 +129,7 @@ class FootBaller:
     def set_contract(self):
         if self.rental!=1:
             self.free_time = 0
+            self.b_team_count = 0
             self.contract = min(max(np.int8(np.round(np.random.normal((40 - self.age)/4, 0.5))), 1), 7)
 
 class FieldPlayer(FootBaller):
@@ -1074,7 +1076,7 @@ class League:
 
         self.team_result = {}
         self.player_result = {}
-        self.champion = pd.DataFrame(columns=["優勝", "得点王", "MVP", "yMVP"])
+        self.champion = pd.DataFrame(columns=["優勝", "得点王", "MVP", "yMVP", "ベストGK"])
         
         self.relegation = {}
         self.relegation_num = relegation_num
@@ -1348,6 +1350,15 @@ class CountryLeague:
             for index in df_search_index[:1]:
                 all_output.loc[index, "賞"] += f"yMVP({season_name}),"
                 l.champion.loc[season_name, "yMVP"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
+            
+            #リーグMVP
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.7))]
+            df_search = df_search[df_search["ポジション"]=="GK"]
+            df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
+            l.champion.loc[season_name, "ベストGK"] = ""
+            for index in df_search_index[:1]:
+                all_output.loc[index, "賞"] += f"ベストGK({season_name}),"
+                l.champion.loc[season_name, "ベストGK"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
         
         # コンペティション最多得点
         all_output = all_output.reset_index(drop=True)
@@ -1530,6 +1541,7 @@ class World_soccer:
                 for t in l.teams:
                     for p in t.not_register_players:
                         p.contract -= 1
+                        p.b_team_count += 1
                         p.grow_up(20)
 
                         if p.main_position != "GK":
@@ -1538,7 +1550,7 @@ class World_soccer:
                             p.main_rate = p.cal_rate()
                         
                         # 登録メンバー外の成長が止まった選手は戦力外
-                        if p.age>p.grow_min_age and p.rental==0:
+                        if (p.age>p.grow_min_age or p.b_team_count>2) and p.rental==0:
                             p.contract=0
 
                         p.cal_all_rate()
@@ -1629,7 +1641,7 @@ class World_soccer:
                     t.affilation_players = [p for p in t.affilation_players if p not in free_players]
 
                     # リーグのレベルにそぐわない選手を契約切れに
-                    out_players = [p for p in t.affilation_players if p.main_rate>=l.max_rate]
+                    out_players = [p for p in t.affilation_players if p.main_rate>l.max_rate]
                     self.free_players.extend(out_players)
                     t.affilation_players = [p for p in t.affilation_players if p not in out_players]
 
@@ -1647,7 +1659,7 @@ class World_soccer:
 
         count = 0
         while True:
-            if count > 2:
+            if count > 3:
                 break
 
             for c in random.sample(self.country_leagues, len(self.country_leagues)):
@@ -1665,8 +1677,17 @@ class World_soccer:
 
                         # 登録外の選手でレンタルにもならない選手を外に出す
                         out_players = [p for p in t.affilation_players if p.register==0 and p.age>=27]
+                        for p in out_players:
+                            p.contract = 0
                         self.free_players.extend(out_players)
                         t.affilation_players = [p for p in t.affilation_players if p not in out_players]
+
+                        if count<1:
+                            # メンバー外の若手をレンタルに
+                            rental_players = [p for p in t.affilation_players if p.register==0 and p.age<23]
+                            set_rental_transfer(rental_players, t)
+                            self.free_players.extend(rental_players)
+                            t.affilation_players = [p for p in t.affilation_players if p not in rental_players]
             count+=1
     
         for c in self.country_leagues:
@@ -1686,6 +1707,15 @@ class World_soccer:
                     Cp.create_teams(new=True)
                     new_players = Cp.players
                     t.affilation_players.extend(new_players)
+        
+        # 移籍市場からレンタル選手を元のチームに戻す
+        rental_players = [p for p in self.free_players if p.rental==1]
+        for p in rental_players:
+            origin_team = p.origin_team
+            p.rental = 0
+            p.origin_team = None
+            p.origin_team_name = ""
+            origin_team.affilation_players.append(p)
 
 class Create_player:
     def __init__(self, position_num, min_rate, max_rate, age_mean, df_name_list, mean_rate=75, now_year=1900):
