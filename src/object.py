@@ -726,7 +726,10 @@ class Team:
                 rate_sum+=p.position_all_rate[pos]
                 num += 1
 
-        self.formation.mean_rate = rate_sum/num
+        if num>0:
+            self.formation.mean_rate = rate_sum/num
+        else:
+            self.formation.mean_rate = 0
     
     # スタメンの弱いpositionを見つける
     def set_empty_position(self, league_rate):
