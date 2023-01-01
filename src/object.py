@@ -19,9 +19,9 @@ class FootBaller:
     def __init__(self, name, age, now_year, injury_possibility, grow_position_type, recovery_power):
         self.age = age
         self.name = name
-        self.grow_min_age = min(max(np.int8(np.round(np.random.normal(24, 0.5))), 22), 26)
-        self.grow_old_age_1 = min(max(np.int8(np.round(np.random.normal(29, 0.5))), 27), 31)
-        self.grow_old_age_2 = max(np.int8(np.round(np.random.normal(33, 0.5))), 31)
+        self.grow_min_age = min(max(np.int8(np.round(np.random.normal(24, 1))), 22), 26)
+        self.grow_old_age_1 = min(max(np.int8(np.round(np.random.normal(29, 1))), 27), 31)
+        self.grow_old_age_2 = max(np.int8(np.round(np.random.normal(33, 1))), 32)
         self.grow_position_type = grow_position_type
 
         self.injury = 0
@@ -37,7 +37,7 @@ class FootBaller:
         self.register = 0
 
         self.grow_exp_dict = {}
-        self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[1, 10, 70, 19])[0]
+        self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[5, 45, 700, 250])[0]
 
         self.position_all_rate = {}
         self.position_all_rate_sorted = []
