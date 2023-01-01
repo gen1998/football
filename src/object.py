@@ -1129,7 +1129,7 @@ class League:
         self.team_result[season_name]["得失点差"] = self.team_result[season_name]["得点"]-self.team_result[season_name]["失点"]
         self.team_result[season_name]["Points"] = self.team_result[season_name].apply(apply_points, axis=1)
         self.team_result[season_name] = self.team_result[season_name].sort_values("Points", ascending=False)
-        self.team_result[season_name]["順位"] = [f"{i}位" for i in range(1, 21)]
+        self.team_result[season_name]["順位"] = [i for i in range(1, 21)]
         self.team_result[season_name]["リーグ名"] = [f"{self.name}" for i in range(20)]
         
         for team in self.teams:
