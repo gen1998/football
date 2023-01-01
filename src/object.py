@@ -607,6 +607,8 @@ class Team:
         self.league_name = None
         self.member_num = member_num
 
+        self.rank_point = 0
+
         self.empty_position = {}
         self.formation_rate = {}
 
@@ -1067,7 +1069,7 @@ class Game:
         p.get_man_of_the_match(self.competition_name)
 
 class League:
-    def __init__(self, name, teams, num, category, relegation_num=0, promotion_num=0, min_rate=75, max_rate=85, mean_rate=80, standard_rate=78):
+    def __init__(self, name, teams, num, category, league_level, relegation_num=0, promotion_num=0, min_rate=75, max_rate=85, mean_rate=80, standard_rate=78):
         self.name = name
         self.teams = teams
         self.num = num
@@ -1076,6 +1078,7 @@ class League:
         self.max_rate = max_rate
         self.mean_rate = mean_rate
         self.standard_rate = standard_rate
+        self.league_level = league_level
 
         self.team_result = {}
         self.player_result = {}
@@ -1131,6 +1134,7 @@ class League:
         
         for team in self.teams:
             team.result.loc[season_name] = self.team_result[season_name].loc[team.name, :]
+            team.rank_point += int(self.team_result[season_name].loc[team.name, "順位"]*self.league_level)
         
         self.champion.loc[season_name, "優勝"] = list(self.team_result[season_name].index)[0]
         
