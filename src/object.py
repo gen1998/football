@@ -1134,7 +1134,7 @@ class League:
         
         for team in self.teams:
             team.result.loc[season_name] = self.team_result[season_name].loc[team.name, :]
-            team.rank_point += int(self.team_result[season_name].loc[team.name, "順位"]*self.league_level)
+            team.rank_point += int(self.team_result[season_name].loc[team.name, "順位"]+(self.league_level-1)*10)
         
         self.champion.loc[season_name, "優勝"] = list(self.team_result[season_name].index)[0]
         
