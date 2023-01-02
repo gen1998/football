@@ -37,7 +37,7 @@ class FootBaller:
         self.register = 0
 
         self.grow_exp_dict = {}
-        self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[5, 45, 700, 250])[0]
+        self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[10, 60, 700, 230])[0]
 
         self.position_all_rate = {}
         self.position_all_rate_sorted = []
@@ -608,6 +608,7 @@ class Team:
         self.member_num = member_num
 
         self.rank_point = 0
+        self.rank_point_list = []
 
         self.empty_position = {}
         self.formation_rate = {}
@@ -1134,7 +1135,8 @@ class League:
         
         for team in self.teams:
             team.result.loc[season_name] = self.team_result[season_name].loc[team.name, :]
-            team.rank_point += int(self.team_result[season_name].loc[team.name, "順位"]+(self.league_level-1)*10)
+            team.rank_point += int(self.team_result[season_name].loc[team.name, "順位"]+(self.league_level-1)*20)
+            team.rank_point_list.append(team.rank_point)
         
         self.champion.loc[season_name, "優勝"] = list(self.team_result[season_name].index)[0]
         
@@ -1150,17 +1152,11 @@ class League:
         season_name = f'{self.name}_{year}'
         
         for section in sections:
-            # 怪我を一つ進める
+            # 必要変数をセッティング
             for p in self.teams[section[0]-1].register_players:
                 p.set_game_variable()
-                if p.injury>0:
-                    p.injury -= 1
-                    p.get_default(season_name)
             for p in self.teams[section[1]-1].register_players:
                 p.set_game_variable()
-                if p.injury>0:
-                    p.injury -= 1
-                    p.get_default(season_name)
 
             # スターティングメンバーを作る
             self.teams[section[0]-1].set_onfield_players()
@@ -1193,6 +1189,16 @@ class League:
 
             self.team_result[season_name].loc[away_team_name, "得点"] += game.away_goal
             self.team_result[season_name].loc[away_team_name, "失点"] += game.home_goal
+
+            # 怪我を一つ進める
+            for p in self.teams[section[0]-1].register_players:
+                if p.injury>0:
+                    p.injury -= 1
+                    p.get_default(season_name)
+            for p in self.teams[section[1]-1].register_players:
+                if p.injury>0:
+                    p.injury -= 1
+                    p.get_default(season_name)
 
 class Competition:
     def __init__(self, name):
