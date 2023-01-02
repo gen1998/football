@@ -1762,7 +1762,7 @@ class Create_player:
             num = self.position_num[pos]
             count = 0
             while True:
-                self.main_value = np.int8(np.round(np.random.normal(self.mean_rate, 5)))
+                self.main_value = np.int8(np.round(np.random.normal(self.mean_rate, 3)))
                 grow_position_type = self.create_player(pos)
                 if new:
                     age = 18
@@ -1800,7 +1800,7 @@ class Create_player:
             if count>=self.position_num["GK"]:
                 break
 
-            self.main_value = np.int8(np.round(np.random.normal(self.mean_rate, 5)))
+            self.main_value = np.int8(np.round(np.random.normal(self.mean_rate, 3)))
             injury_possibility = np.random.normal(0.035, 0.01) + max((self.pac-85)*0.005, 0)
             recovery_power = min(max(np.random.normal(69, 5), 50), 80)
 
