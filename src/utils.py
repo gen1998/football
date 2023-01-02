@@ -80,6 +80,7 @@ def parctice_player_result(player, year):
                            "残契約":[0],
                            "ポジション":[player.main_position],
                            "リーグ":["practice_league"],
+                           "リーグレベル":[-1],
                            "年度":[year],
                            "国":["rental"], 
                            "チーム":["practice_team"],
@@ -100,6 +101,7 @@ def parctice_player_result(player, year):
     })
     return output
 
+"""
 def rental_player_result(player, year, team_name):
     output = pd.DataFrame({"名前":[player.name],
                            "uuid":[player.uuid],
@@ -127,6 +129,7 @@ def rental_player_result(player, year, team_name):
                            "全ポジション回数":[""],
     })
     return output
+"""
 
 def self_study_player_result(player, year):
     output = pd.DataFrame({"名前":[player.name],
@@ -137,6 +140,7 @@ def self_study_player_result(player, year):
                            "ポジション":[player.main_position],
                            "国":["rental"], 
                            "リーグ":["所属なし"],
+                           "リーグレベル":[-1],
                            "年度":[year],
                            "チーム":["所属なし"],
                            "レンタル元":[""],

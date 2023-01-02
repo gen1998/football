@@ -1265,6 +1265,7 @@ class CountryLeague:
                                         "ポジション":[sorted(result["ポジション"].items(), key=lambda x:x[1], reverse=True)[0][0] for result in season_result],
                                         "国":[self.name for i in range(len(t.register_players))],
                                         "リーグ":[l.name for i in range(len(t.register_players))],
+                                        "リーグレベル":[l.league_level for i in range(len(t.register_players))],
                                         "年度":[result["年度"] for result in season_result],
                                         "チーム":[t.name for i in range(len(t.register_players))],
                                         "レンタル元":[p.origin_team_name for p in t.register_players],
@@ -1290,6 +1291,7 @@ class CountryLeague:
                                         "残契約":[p.contract-1 for p in t.register_players],
                                         "ポジション":[sorted(result["ポジション"].items(), key=lambda x:x[1], reverse=True)[0][0] for result in competition_result],
                                         "リーグ":[l.name for i in range(len(t.register_players))],
+                                        "リーグレベル":[l.league_level for i in range(len(t.register_players))],
                                         "年度":[result["年度"] for result in competition_result],
                                         "国":[self.name for i in range(len(t.register_players))],
                                         "チーム":[t.name for i in range(len(t.register_players))],
@@ -1364,7 +1366,7 @@ class CountryLeague:
                 all_output.loc[index, "賞"] += f"yMVP({season_name}),"
                 l.champion.loc[season_name, "yMVP"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
             
-            #リーグMVP
+            #GK_MVP
             df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.7))]
             df_search = df_search[df_search["ポジション"]=="GK"]
             df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
@@ -1529,6 +1531,7 @@ class World_soccer:
                                     "残契約":[p.contract-1 for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "ポジション":[p.main_position for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "リーグ":["Under League" for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "リーグレベル":[10 for i in range(len(t.register_players))],
                                     "年度":[year for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "国":[c.name for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "チーム":[f"{t.name}_B" for l in c.leagues for t in l.teams for p in t.not_register_players],
