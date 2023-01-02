@@ -1531,7 +1531,7 @@ class World_soccer:
                                     "残契約":[p.contract-1 for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "ポジション":[p.main_position for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "リーグ":["Under League" for l in c.leagues for t in l.teams for p in t.not_register_players],
-                                    "リーグレベル":[10 for i in range(len(t.register_players))],
+                                    "リーグレベル":[10 for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "年度":[year for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "国":[c.name for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "チーム":[f"{t.name}_B" for l in c.leagues for t in l.teams for p in t.not_register_players],
