@@ -37,7 +37,7 @@ class FootBaller:
         self.register = 0
 
         self.grow_exp_dict = {}
-        self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[10, 60, 700, 230])[0]
+        self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[10, 60, 500, 430])[0]
 
         self.position_all_rate = {}
         self.position_all_rate_sorted = []
