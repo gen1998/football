@@ -617,7 +617,7 @@ class Team:
         self.relegation = 0
         self.promotion = 0
 
-    def set_register_players(self):
+    def set_register_players(self, injury_level=100):
         for p in self.affilation_players:
             p.register = 0
         
@@ -626,7 +626,7 @@ class Team:
                 p.register = 1
 
         for pos, num in BENCH_POSITION_NUM.items():
-            not_register = [p for p in self.affilation_players if p.register==0]
+            not_register = [p for p in self.affilation_players if p.register==0 and p.injury<injury_level]
             not_register = sorted(not_register, key=lambda x:x.position_all_rate[pos], reverse=True)
             for p in not_register[:num]:
                 p.register = 1
@@ -688,7 +688,8 @@ class Team:
             self.formation.players_flat.extend(fps)
     
     # 現状の最強スカッドを作成する
-    def set_main_rate_position(self):
+    def set_main_rate_position(self, injury_level=100):
+        # injury_level:怪我をどれくらい許容するか
         self.formation.main_rate_formation = {}
         for pos in self.formation.formation_flat:
             self.formation.main_rate_formation[pos] = []
@@ -697,7 +698,7 @@ class Team:
             p.index = 0
             p.position_all_rate_sorted = sorted(p.position_all_rate.items(), key=lambda x:x[1], reverse=True)
         
-        remain_players = self.affilation_players
+        remain_players = [p for p in self.affilation_players if p.injury<injury_level]
         count = 0
 
         while True:
@@ -794,7 +795,7 @@ class Team:
             free_players = [p for p in free_players if p not in new_players]
         return free_players
     
-    def set_register_players_(self):
+    def set_register_players_(self, injury_level=100):
         for p in self.affilation_players:
             p.register = 0
         
@@ -803,7 +804,7 @@ class Team:
                 p.register = 1
 
         for pos, num in BENCH_POSITION_NUM.items():
-            not_register = [p for p in self.affilation_players if p.register==0]
+            not_register = [p for p in self.affilation_players if p.register==0 and p.injury<injury_level]
             not_register = sorted(not_register, key=lambda x:x.position_all_rate[pos], reverse=True)
             for p in not_register[:num]:
                 p.register = 1
@@ -1020,6 +1021,17 @@ class Game:
             for p in self.away.formation.players_flat:
                 if p.startup==1:
                     p.get_cs(self.competition_name)
+
+        # 怪我の経過を行う
+        for p in [p for p in self.home.register_players if p.partification==0]:
+            if p.injury>0:
+                p.injury -= 1
+                p.get_default(self.competition_name)
+        
+        for p in [p for p in self.away.register_players if p.partification==0]:
+            if p.injury>0:
+                p.injury -= 1
+                p.get_default(self.competition_name)
         
         # 怪我 F分布で表現
         for p in [p for p in self.home.register_players if p.partification==1]:
@@ -1190,16 +1202,6 @@ class League:
             self.team_result[season_name].loc[away_team_name, "得点"] += game.away_goal
             self.team_result[season_name].loc[away_team_name, "失点"] += game.home_goal
 
-            # 怪我を一つ進める
-            for p in self.teams[section[0]-1].register_players:
-                if p.injury>0:
-                    p.injury -= 1
-                    p.get_default(season_name)
-            for p in self.teams[section[1]-1].register_players:
-                if p.injury>0:
-                    p.injury -= 1
-                    p.get_default(season_name)
-
 class Competition:
     def __init__(self, name):
         self.name = name
@@ -1243,7 +1245,6 @@ class CountryLeague:
         for l in self.leagues:
             for t in l.teams:
                 for p in t.affilation_players:
-                    p.today_playing_time = 0
                     p.partification = 0
                     p.partification_position = None
     
@@ -1317,13 +1318,16 @@ class CountryLeague:
                     p.contract -= 1
 
                     # 再契約する処理
-                    if p.contract == 0 and p.partification_position is not None and p.rental!=1:
-                        if np.random.rand()<0.3:
-                            p.set_contract()
+                    if p.contract == 0 and np.random.rand()<p.result[season_name]["出場時間"]*0.6/3420 and p.rental!=1:
+                        p.set_contract()
                     
                     # 試合に出てない人を戦力外にする処理
-                    if p.partification_position is None and p.main_position!="GK" and p.rental!=1:
-                        p.contract = 0
+                    if p.partification_position is None and p.rental!=1:
+                        if p.main_position!="GK":
+                            p.contract = 0
+                        else:
+                            if np.random.rand()<0.6:
+                                p.contract = 0
                     
                     # 成長
                     #p.grow_up((season_result["出場時間"]+competition_result["出場時間"])/90)
@@ -1388,11 +1392,11 @@ class CountryLeague:
         self.players_result = pd.concat([self.players_result, all_output])
         self.players_result = self.players_result.reset_index(drop=True)
 
-    def set_register_member(self):
+    def set_register_member(self, injury_level=100):
         for l in self.leagues:
             for t in l.teams:
-                t.set_main_rate_position()
-                t.set_register_players()
+                t.set_main_rate_position(injury_level=injury_level)
+                t.set_register_players(injury_level=injury_level)
 
     def play_holiday(self):
         for l in self.leagues:
@@ -1406,7 +1410,7 @@ class CountryLeague:
         self.competition = Competition(name=f"{self.competition_name}_{year}")
         self.set_competition(self.competition.name, year, num_section)
         self.set_players_partification()
-        self.set_register_member()
+        self.set_register_member(injury_level=100)
         
         # 必要変数をセッティング
         for l in self.leagues:
@@ -1424,18 +1428,6 @@ class CountryLeague:
             game_team = self.competition_teams[i:i+2]
             if len(game_team) < 2:
                 continue
-
-            # 怪我を一つ進める
-            for p in game_team[0].register_players:
-                p.set_game_variable()
-                if p.injury>0:
-                    p.injury -= 1
-                    p.get_default(self.competition.name)
-            for p in game_team[1].register_players:
-                p.set_game_variable()
-                if p.injury>0:
-                    p.injury -= 1
-                    p.get_default(self.competition.name)
             
             # スターティングメンバーを作る
             game_team[0].set_onfield_players()
@@ -1516,6 +1508,9 @@ class World_soccer:
                 
                 if day%5==0:
                     c.play_holiday()
+                
+                #if day%10==0:
+                    #c.set_register_member(injury_level=10)
         
         # リーグ成績の計算
         for c in self.country_leagues:
@@ -1670,8 +1665,11 @@ class World_soccer:
         
         print(" 引退人数   　: ", sum_retire_player)
         print(" 移籍市場人数 : ", len(self.free_players))
+        print()
         
         random.shuffle(self.free_players)
+
+        transfer_start = time.time()
 
         count = 0
         while True:
@@ -1733,6 +1731,12 @@ class World_soccer:
             p.origin_team = None
             p.origin_team_name = ""
             origin_team.affilation_players.append(p)
+        
+        transfer_end = time.time()
+
+        print(" 移籍市場経過時間 : {:.2f}秒".foramt(transfer_start-transfer_end))
+        print(" 残留籍市場人数 : ", len(self.free_players))
+        print()
 
 class Create_player:
     def __init__(self, position_num, min_rate, max_rate, age_mean, df_name_list, mean_rate=75, now_year=1900):
