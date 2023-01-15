@@ -1734,7 +1734,7 @@ class World_soccer:
         
         transfer_end = time.time()
 
-        print(" 移籍市場経過時間 : {:.2f}秒".foramt(transfer_start-transfer_end))
+        print(" 移籍市場経過時間 : {:.2f}秒".format(transfer_start-transfer_end))
         print(" 残留籍市場人数 : ", len(self.free_players))
         print()
 
