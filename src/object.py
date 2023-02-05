@@ -609,6 +609,8 @@ class Team:
 
         self.rank_point = 0
         self.rank_point_list = []
+        self.before_rank = 0
+        self.league_state = "stay"
 
         self.empty_position = {}
         self.formation_rate = {}
@@ -1149,6 +1151,7 @@ class League:
             team.result.loc[season_name] = self.team_result[season_name].loc[team.name, :]
             team.rank_point += int(self.team_result[season_name].loc[team.name, "順位"]+(self.league_level-1)*20)
             team.rank_point_list.append(team.rank_point)
+            team.before_rank = int(self.team_result[season_name].loc[team.name, "順位"])
         
         self.champion.loc[season_name, "優勝"] = list(self.team_result[season_name].index)[0]
         
@@ -1574,17 +1577,25 @@ class World_soccer:
 
         # 昇格降格
         for c in self.country_leagues:
+            for l in c.leagues:
+                for t in l.teams:
+                    t.league_state = "stay"
+
             for index in range(len(c.leagues)):
                 season_name = f"{c.leagues[index].name}_{year}"
                 if c.leagues[index].category!="top":
                     promotion = c.leagues[index].promotion[season_name]
                     promotion_team = [t for t in c.leagues[index].teams if t.name in promotion]
+                    for t in promotion_team:
+                        t.league_state = "promotion"
                     c.leagues[index].teams = [s for s in c.leagues[index].teams if s not in promotion_team]
                     c.leagues[index-1].teams.extend(promotion_team)
 
                 if c.leagues[index].category!="lowest":
                     relegation = c.leagues[index].relegation[season_name]
                     relegation_team = [t for t in c.leagues[index].teams if t.name in relegation]
+                    for t in relegation_team:
+                        t.league_state = "relegation"
                     c.leagues[index].teams = [s for s in c.leagues[index].teams if s not in relegation_team]
                     c.leagues[index+1].teams.extend(relegation_team)
     
@@ -1639,6 +1650,7 @@ class World_soccer:
         for c in self.country_leagues:
             # 引退と契約切れを行う
             for l in c.leagues:
+                print(l.name)
                 for t in l.teams:
                     # 引退
                     retire_player = [p for p in t.affilation_players if p.retire==1]
@@ -1662,6 +1674,10 @@ class World_soccer:
                     set_rental_transfer(rental_players, t)
                     self.free_players.extend(rental_players)
                     t.affilation_players = [p for p in t.affilation_players if p not in rental_players]
+
+                    print(" ", t.name)
+                    print(" 所属人数：", len(t.affilation_players))
+                    print(" レンタル予定選手：", len(rental_players))
         
         print(" 引退人数   　: ", sum_retire_player)
         print(" 移籍市場人数 : ", len(self.free_players))
