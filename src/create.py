@@ -1,14 +1,13 @@
 import numpy as np
-import pandas as pd
-
-import random
 
 import sys
 sys.path.append("../")
 
-from src.object import *
-from config.formation import *
-from config.config import *
+from src.object.team import Team
+from src.object.formation import Formation
+from src.object.player import Create_player
+from config.formation import FORMATION_DICT
+from config.config import N
 
 
 def random_create_formation():
