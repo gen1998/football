@@ -35,7 +35,7 @@ class Formation:
         output["GK"] = []
         self.players = output
 
-    def set_main_rate_position(self):
+    def set_main_rate_formation(self):
         self.main_rate_formation = {}
 
         for pos in self.formation_flat:
