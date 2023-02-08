@@ -53,7 +53,7 @@ class Team:
 
     def set_onfield_players(self):
         self.formation.set_players_position()
-        self.formation.set_main_rate_position()
+        self.formation.set_main_rate_formation()
         self.formation.players_flat = []
         
         for p in self.affilation_players:
@@ -104,7 +104,7 @@ class Team:
     # 現状の最強スカッドを作成する
     def set_main_rate_position(self, injury_level=100):
         # injury_level:怪我をどれくらい許容するか
-        self.formation.set_main_rate_position()
+        self.formation.set_main_rate_formation()
         
         for p in self.affilation_players:
             p.index = 0

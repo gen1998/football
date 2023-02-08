@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import japanize_matplotlib
 import math
 
-from src.object import FieldPlayer
+from src.object.player import FieldPlayer
 from src.utils import team_count, country_img
 
 from IPython.core.display import display
