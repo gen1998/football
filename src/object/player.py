@@ -90,6 +90,23 @@ class FootBaller:
     def get_man_of_the_match(self, season_name):
         self.result[season_name]["MOM"] += 1
 
+    def set_player_result(self, competition_name, year, kind):
+        self.result[competition_name] = {}
+        self.result[competition_name]["goal"] = 0
+        self.result[competition_name]["assist"] = 0
+        self.result[competition_name]["CS"] = 0
+        self.result[competition_name]["試合数"] = 0
+        self.result[competition_name]["年度"] = year
+        self.result[competition_name]["分類"] = kind
+        self.result[competition_name]["年齢"] = self.age
+        self.result[competition_name]["怪我欠場"] = 0
+        self.result[competition_name]["怪我回数"] = 0
+        self.result[competition_name]["出場時間"] = 0
+        self.result[competition_name]["合計評価点"] = 0
+        self.result[competition_name]["MOM"] = 0
+        self.result[competition_name]["ポジション"] = {}
+        self.result[competition_name]["ポジション"][self.main_position] = 0
+
     # 試合に関する変数のリセット
     def set_game_variable(self):
         self.today_goal = 0

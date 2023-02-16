@@ -25,7 +25,7 @@ class Competition:
         self.section_interval = num_section//self.max_round
 
 class ProLeague:
-    def __init__(self, name, leagues, competition_name=None):
+    def __init__(self, name, leagues, df_name_list, competition_name=None):
         self.name = name
         self.leagues = leagues
 
@@ -36,6 +36,8 @@ class ProLeague:
         self.competition_teams = None
         self.competition_result = {}
         self.competition_result_top = pd.DataFrame(columns=["年度", "優勝", "準優勝"])
+
+        self.df_name_list = df_name_list
     
     def set_competition(self, competition_name, year, num_section):
         self.competition_teams=[]
@@ -62,6 +64,11 @@ class ProLeague:
             season_name = f'{l.name}_{year}'
             league_rank = l.team_result[season_name].index.tolist()
             for t in l.teams:
+                # リーグ途中参戦の選手の結果を追加する
+                for p in t.register_players:
+                    if self.competition.name not in p.result.keys():
+                        p.set_player_result(self.competition.name, year, "カップ戦")
+
                 t.formation_rate[season_name] = t.formation.team_rate
                 season_result = [p.result[season_name] for p in t.register_players]
                 competition_result = [p.result[self.competition.name] for p in t.register_players]
@@ -236,11 +243,20 @@ class ProLeague:
             game_team = self.competition_teams[i:i+2]
             if len(game_team) < 2:
                 continue
+
+            for p in game_team[0].register_players:
+                if self.competition.name not in p.result.keys():
+                    p.set_player_result(self.competition.name, year, "カップ戦")
+                p.set_game_variable()
+            for p in game_team[1].register_players:
+                if self.competition.name not in p.result.keys():
+                    p.set_player_result(self.competition.name, year, "カップ戦")
+                p.set_game_variable()
             
             # スターティングメンバーを作る
-            game_team[0].set_onfield_players()
+            game_team[0].set_onfield_players(year, 63, self.df_name_list, self.competition.name, "カップ戦")
             game_team[0].formation.cal_team_rate()
-            game_team[1].set_onfield_players()
+            game_team[1].set_onfield_players(year, 63, self.df_name_list, self.competition.name, "カップ戦")
             game_team[1].formation.cal_team_rate()
 
             cup_game = Game(home=game_team[0], 

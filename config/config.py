@@ -16,7 +16,9 @@ POSITION_LOW_DICT = {"ST" : ["ST", "CF", "CAM"],
                      "LWB" : ["RB", "LB", "RWB", "LWB", "RM", "LM"],
                      "GK" : ["GK"]}
 GENERAL_POSITION_NUM = {"ST":2, "RW":2, "CAM":2, "RM":2, "CM":4, "CDM":2, "CB":4, "RB":4, "GK":3}
-BENCH_POSITION_NUM = {"ST":2, "RW":1, "CAM":1, "RM":1, "CM":2, "CDM":1, "CB":3, "RB":1, "GK":2}
+BENCH_POSITION_NUM = {"ST":1, "RW":1, "CM":3, "CB":2, "GK":2}
 
 N = 1000000
 REPLACEMENT_MAX = 3
+YOUNG_OLD = 24
+LEAGUE_LEVEL_MAX = 4
