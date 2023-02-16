@@ -117,7 +117,7 @@ class Team:
                 else:
                     self.affilation_players.append(plus_player)
             
-            if count>100:
+            if count>200:
                 raise Exception(f'{self.name}はチームを作成できません')
 
             for p in remain_players:
