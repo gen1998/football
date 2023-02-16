@@ -10,17 +10,28 @@ def apply_points(row):
     return row.win*3+row.row
 
 class League:
-    def __init__(self, name, teams, num, category, league_level, 
+    def __init__(self, name, teams, num, category, league_level,
+                 df_name_list,
                  relegation_num=0, promotion_num=0, 
-                 min_rate=75, max_rate=85, mean_rate=80):
+                 min_rate=75, max_rate=85, mean_rate=80,
+                 min_starting_mean_rate=73,
+                 max_starting_mean_rate=99,
+                 min_bench_mean_rate=75,
+                 max_bench_mean_rate=80,
+                 bench_num=8):
         # 固定値
         self.name = name
         self.teams = teams
         self.num = num
+        self.bench_num = bench_num
         self.category = category
         self.min_rate = min_rate
         self.max_rate = max_rate
         self.mean_rate = mean_rate
+        self.min_starting_mean_rate = min_starting_mean_rate
+        self.max_starting_mean_rate = max_starting_mean_rate
+        self.min_bench_mean_rate = min_bench_mean_rate
+        self.max_bench_mean_rate = max_bench_mean_rate
         self.league_level = league_level
 
         # 結果
@@ -34,6 +45,7 @@ class League:
         self.promotion = {}
         self.promotion_num = promotion_num
 
+        self.df_name_list = df_name_list
         self.set_team_leaguename()
     
     def set_team_leaguename(self):
@@ -43,21 +55,7 @@ class League:
     def set_player_result(self, competition_name, year, kind):
         for t in self.teams:
             for p in t.affilation_players:
-                p.result[competition_name] = {}
-                p.result[competition_name]["goal"] = 0
-                p.result[competition_name]["assist"] = 0
-                p.result[competition_name]["CS"] = 0
-                p.result[competition_name]["試合数"] = 0
-                p.result[competition_name]["年度"] = year
-                p.result[competition_name]["分類"] = kind
-                p.result[competition_name]["年齢"] = p.age
-                p.result[competition_name]["怪我欠場"] = 0
-                p.result[competition_name]["怪我回数"] = 0
-                p.result[competition_name]["出場時間"] = 0
-                p.result[competition_name]["合計評価点"] = 0
-                p.result[competition_name]["MOM"] = 0
-                p.result[competition_name]["ポジション"] = {}
-                p.result[competition_name]["ポジション"][p.main_position] = 0
+                p.set_player_result(competition_name, year, kind)
                 p.recovery_vitality(off=True)
     
     def set_team_result(self, season_name):
@@ -99,14 +97,18 @@ class League:
         for section in sections:
             # 必要変数をセッティング
             for p in self.teams[section[0]-1].register_players:
+                if season_name not in p.result.keys():
+                    p.set_player_result(season_name, year, "リーグ")
                 p.set_game_variable()
             for p in self.teams[section[1]-1].register_players:
+                if season_name not in p.result.keys():
+                    p.set_player_result(season_name, year, "リーグ")
                 p.set_game_variable()
 
             # スターティングメンバーを作る
-            self.teams[section[0]-1].set_onfield_players()
+            self.teams[section[0]-1].set_onfield_players(year, self.mean_rate, self.df_name_list, season_name, "リーグ")
             self.teams[section[0]-1].formation.cal_team_rate()
-            self.teams[section[1]-1].set_onfield_players()
+            self.teams[section[1]-1].set_onfield_players(year, self.mean_rate, self.df_name_list, season_name, "リーグ")
             self.teams[section[1]-1].formation.cal_team_rate()
             
             game = Game(home=self.teams[section[0]-1], 
