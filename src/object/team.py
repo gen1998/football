@@ -116,8 +116,11 @@ class Team:
                     self.not_register_players.remove(plus_player)
                 else:
                     self.affilation_players.append(plus_player)
+                
+                new_flag = 0
+                gk_flag = 0
             
-            if count>100:
+            if count>200:
                 raise Exception(f'{self.name}はチームを作成できません')
 
             for p in remain_players:
