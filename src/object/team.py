@@ -293,6 +293,9 @@ class Team:
             
             count += 1
             sorted_num += 5
+            free_players.extend(new_players)
+
+            del new_players
 
         self.check_duplication()
         for p in new_players:
@@ -362,6 +365,7 @@ class Team:
             
             count += 1
             sorted_num += 5
+            free_players.extend(new_players)
 
             del new_players
 
