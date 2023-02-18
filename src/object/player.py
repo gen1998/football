@@ -38,7 +38,7 @@ class FootBaller:
 
         # 能力値
         self.main_rate = None
-        self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[10, 60, 500, 430])[0]
+        self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[10, 60, 350, 580])[0]
         self.grow_exp_dict = {}
         self.position_all_rate = {}
         self.position_all_rate_sorted = []
@@ -610,7 +610,7 @@ class Create_player:
                 self.pas = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
                 self.sho = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
                 self.de = np.int8(np.round(np.random.normal(30, 5)))
-                self.phy = np.int8(np.round(np.random.normal(50, 7)))
+                self.phy = np.int8(np.round(np.random.normal(self.main_value-30, 7)))
 
             elif pos == "RM":
                 self.pac = np.int8(np.round(np.random.normal(70, 7)))
@@ -618,7 +618,7 @@ class Create_player:
                 self.pas = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
                 self.dri = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
                 self.de = np.int8(np.round(np.random.normal(self.main_value-10, 7)))
-                self.phy = np.int8(np.round(np.random.normal(50, 7)))
+                self.phy = np.int8(np.round(np.random.normal(self.main_value-25, 7)))
 
             elif pos == "RB" or pos == "RWB":
                 self.pac = np.int8(np.round(np.random.normal(80, 5)))
@@ -634,7 +634,7 @@ class Create_player:
                 self.pas = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
                 self.dri = np.int8(np.round(np.random.normal(self.main_value, 1.5)))
                 self.de = np.int8(np.round(np.random.normal(40, 7)))
-                self.phy = np.int8(np.round(np.random.normal(50, 7)))
+                self.phy = np.int8(np.round(np.random.normal(self.main_value-30, 7)))
 
             elif pos=="CM":
                 self.pac = np.int8(np.round(np.random.normal(self.main_value-5, 3)))

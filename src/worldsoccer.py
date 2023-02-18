@@ -186,9 +186,9 @@ class Worldsoccer:
                     t.affilation_players = [p for p in t.affilation_players if p not in retire_player]
 
                     # 契約切れ
-                    free_players = [p for p in t.affilation_players if p.contract==0]
-                    self.free_players.extend(free_players)
-                    t.affilation_players = [p for p in t.affilation_players if p not in free_players]
+                    expired_players = [p for p in t.affilation_players if p.contract==0]
+                    self.free_players.extend(expired_players)
+                    t.affilation_players = [p for p in t.affilation_players if p not in expired_players]
 
                     # リーグのレベルにそぐわない選手を契約切れに
                     out_players = [p for p in t.affilation_players if p.main_rate>l.max_rate]
