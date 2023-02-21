@@ -99,8 +99,16 @@ class Worldsoccer:
                         p.injury = 0
         
         # 選手の成績の計算
+        Ballond = pd.DataFrame()
         for c in self.country_leagues:
-            c.cal_players_result(year)
+            buff = c.cal_players_result(year)
+            Ballond = pd.concat([Ballond, buff])
+        
+        Ballond = Ballond.sort_values("評価点", ascending=False).iloc[:1]
+        for c in self.country_leagues:
+            if c.leagues[0].name == Ballond["リーグ"].values[0]:
+                c.players_result.loc[Ballond.index, "賞"]+=f"Ballon d'Or_{year}, "
+                break
 
         # 昇格降格
         for c in self.country_leagues:
