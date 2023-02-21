@@ -6,7 +6,7 @@ import random
 import sys
 sys.path.append("../")
 
-from config.config import N
+from config.config import N, BEST_ELEVEN_LIST
 from src.object.game import Game
 from src.utils import create_calender
 
@@ -193,6 +193,13 @@ class ProLeague:
             for index in df_search_index[:1]:
                 all_output.loc[index, "賞"] += f"ベストGK({season_name}),"
                 l.champion.loc[season_name, "ベストGK"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
+            
+            #ベストイレブン
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.7))]
+            for position, num in BEST_ELEVEN_LIST:
+                df_search_index = df_search[df_search["ポジション"].isin(position)].sort_values("評価点", ascending=False).index.tolist()[:num]
+                for index in df_search_index:
+                    all_output.loc[index, "賞"] += f"ベストイレブン({season_name}),"
         
         # コンペティション最多得点
         all_output = all_output.reset_index(drop=True)
@@ -206,6 +213,8 @@ class ProLeague:
 
         self.players_result = pd.concat([self.players_result, all_output])
         self.players_result = self.players_result.reset_index(drop=True)
+
+        return self.players_result[((self.players_result["リーグレベル"]==1)&(self.players_result["出場時間"]>(self.leagues[0].num-1)*2*90*0.7))]
 
     def set_register_member(self, injury_level=100):
         for l in self.leagues:
