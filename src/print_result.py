@@ -106,12 +106,18 @@ def print_player(WorldLeague, all_member, uuid_):
     plt.axis([0,15,0,15]) 
     plt.axis("off")
     count=0
+    text_list = []
     for row in output["賞"]:
         if row != "" or row != " ":
             for r in row.split(","):
                 if r != "":
-                    plt.text(0, 15-count, f"{r}")
-                    count += 1
+                    text_list.append(f"{r}")
+    
+    text_list = sorted(text_list)
+    
+    for txt in text_list:
+        plt.text(0, 15-count, f"{txt}")
+        count += 1
 
     plt.subplot(1, 3, 2)
     plt.plot(output["年齢"], output["Rate"])
