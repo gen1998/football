@@ -214,7 +214,7 @@ class ProLeague:
         self.players_result = pd.concat([self.players_result, all_output])
         self.players_result = self.players_result.reset_index(drop=True)
 
-        return self.players_result[((self.players_result["リーグレベル"]==1)&(self.players_result["出場時間"]>(self.leagues[0].num-1)*2*90*0.7))]
+        return self.players_result[((self.players_result["リーグレベル"]==1)&(self.players_result["出場時間"]>(self.leagues[0].num-1)*2*90*0.7)&(self.players_result["年度"]==year))]
 
     def set_register_member(self, injury_level=100):
         for l in self.leagues:
