@@ -1,5 +1,6 @@
 import pandas as pd
 import random
+import uuid
 
 import sys
 sys.path.append("../")
@@ -8,9 +9,10 @@ from config.config import ALL_POSITON_LOW, ALL_POSITON_LOW_GK, BENCH_POSITION_NU
 from src.object.player import Create_player
 
 class Team:
-    def __init__(self, name, formation, member_num=30):
+    def __init__(self, name, formation, member_num=30, before_rank=1):
         # 固定値
         self.name = name
+        self.uuid = uuid.uuid1()
         self.league_name = None
         self.member_num = member_num
         self.formation = formation
@@ -28,12 +30,15 @@ class Team:
         self.formation_rate = {}
         self.rank_point = 0
         self.rank_point_list = []
-        self.before_rank = 0
+        self.before_rank = before_rank
 
         # 昇格降格変数
         self.relegation = 0
         self.promotion = 0
         self.league_state = "stay"
+
+        # CL変数
+        self.cl_variable = None
 
     def set_register_players(self, injury_level=100, change_register=True):
         for p in self.affilation_players:

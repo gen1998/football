@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+import uuid
+
 import sys
 sys.path.append("../")
 
@@ -21,6 +23,7 @@ class League:
                  bench_num=8):
         # 固定値
         self.name = name
+        self.uuid = uuid.uuid1()
         self.teams = teams
         self.num = num
         self.bench_num = bench_num
@@ -33,6 +36,7 @@ class League:
         self.min_bench_mean_rate = min_bench_mean_rate
         self.max_bench_mean_rate = max_bench_mean_rate
         self.league_level = league_level
+        self.sections = None
 
         # 結果
         self.team_result = {}
@@ -94,29 +98,15 @@ class League:
     def play_1section(self, year, sections):
         season_name = f'{self.name}_{year}'
         
-        for section in sections:
-            # 必要変数をセッティング
-            for p in self.teams[section[0]-1].register_players:
-                if season_name not in p.result.keys():
-                    p.set_player_result(season_name, year, "リーグ")
-                p.set_game_variable()
-            for p in self.teams[section[1]-1].register_players:
-                if season_name not in p.result.keys():
-                    p.set_player_result(season_name, year, "リーグ")
-                p.set_game_variable()
-
-            # スターティングメンバーを作る
-            self.teams[section[0]-1].set_onfield_players(year, self.mean_rate, self.df_name_list, season_name, "リーグ")
-            self.teams[section[0]-1].formation.cal_team_rate()
-            self.teams[section[1]-1].set_onfield_players(year, self.mean_rate, self.df_name_list, season_name, "リーグ")
-            self.teams[section[1]-1].formation.cal_team_rate()
-            
+        for section in sections:            
             game = Game(home=self.teams[section[0]-1], 
                         away=self.teams[section[1]-1],
                         competition_name=season_name,
                         moment_num=24,
                         random_std=0.3)
-            game.battle()
+            game.battle(year=year,
+                        kind="リーグ戦",
+                        df_name_list=self.df_name_list)
 
             home_team_name = self.teams[section[0]-1].name
             away_team_name = self.teams[section[1]-1].name
