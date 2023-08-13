@@ -50,7 +50,8 @@ def create_team(num, team_name_list, player_name_list,
         players.extend(Cp.players)
         formation = random_create_formation()
         T = Team(name=team_name_list[index], 
-                 formation=formation)
+                 formation=formation,
+                 before_rank=index+1)
         
         T.affilation_players = players
         teams.append(T)

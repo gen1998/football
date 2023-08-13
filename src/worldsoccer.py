@@ -1,18 +1,30 @@
 import pandas as pd
 import random
 import time
+import uuid
+import datetime
 from tqdm import tqdm
 
 import sys
 sys.path.append("../")
 
-from src.utils import create_calender, parctice_player_result, self_study_player_result, set_rental_transfer
+from src.utils import parctice_player_result, self_study_player_result, set_rental_transfer, create_sections_calendar, create_cup_calendar, create_sections
+from src.object.proleague import Competition
 from src.object.player import Create_player
-from config.config import YOUNG_OLD, LEAGUE_LEVEL_MAX
+from src.object.continental import Continental_Cup
+from src.object.game import Game
+from config.config import YOUNG_OLD, LEAGUE_LEVEL_MAX, ONE_YEAR_DAYS, WEEK_DAY_LIST
 
 class Worldsoccer:
-    def __init__(self, country_leagues):
+    def __init__(self, country_leagues, continental_cups_dict={"CL":32}):
         self.country_leagues = country_leagues
+
+        self.period = 300
+        self.interval = 7
+        self.international_games = 0 # CL, EL, ECL, ACLなど国際カップ戦の試合数
+
+        self.continental_cups_dict = continental_cups_dict
+        self.continental_cups = {}
 
         self.players_result = pd.DataFrame()
 
@@ -20,14 +32,37 @@ class Worldsoccer:
         self.retire_players = []
     
     def play_1season(self, year):
-        # 全リーグ同じチーム数の時、変える必要がある
-        league_calender = create_calender()
-        num_section = len(league_calender)
-
         # 全カントリーリーグの準備
         for c in self.country_leagues:
             c.prepare_1season(year)
+        
+        CALENDAR = self.set_calendar()
+        
+        #start_day = datetime.datetime(2023, 8, 6)
 
+        for progress_day, plan in enumerate(tqdm(CALENDAR)):
+            if len(plan.keys())!=0:
+                #game_day = start_day + datetime.timedelta(days=progress_day)
+                #weekday = WEEK_DAY_LIST[game_day.weekday()]
+                #print(game_day, weekday)
+                for key, value in plan.items():
+                    key_uuid = uuid.UUID(key[:key.find("_")])
+                    value_sec = int(value[value.find("_")+1:])
+                    if "league" in key:
+                        l = [l for c in self.country_leagues for l in c.leagues if l.uuid==key_uuid][0]
+                        sections = l.sections[:, value_sec-1]
+                        #print(" ", l.name, sections)
+                        l.play_1section(year, sections)
+                    if "cup" in key:
+                        c = [c for c in self.country_leagues if c.competition.uuid==key_uuid][0]
+                        #print(" ", c.competition.name, value_sec)
+                        c.play_1competition_section()
+                #print()
+
+        # 全リーグ同じチーム数の時、変える必要がある
+        #league_calender = create_calender()
+        #num_section = len(league_calender)
+        """
         for day in tqdm(range(num_section)):
             for c in self.country_leagues:
                 if day==int(c.competition.section_interval*c.competition.now_round):
@@ -41,6 +76,7 @@ class Worldsoccer:
                 
                 #if day%10==0:
                     #c.set_register_member(injury_level=10)
+        """
         
         # リーグ成績の計算
         for c in self.country_leagues:
@@ -315,6 +351,75 @@ class Worldsoccer:
         print(" 移籍市場経過時間 : {:.2f}秒".format(transfer_end-transfer_start))
         print(" 残留籍市場人数 : ", len(self.free_players))
         print()
+
+    def set_calendar(self):
+        # カレンダーの作成
+        CALENDAR = [{} for _ in range(ONE_YEAR_DAYS)]
+
+        for c in self.country_leagues:
+            for l in c.leagues:
+                create_sections_calendar(l, CALENDAR, 
+                                         period=self.period,
+                                         interval=self.interval)
+            create_cup_calendar(c.competition, self.international_games,
+                                CALENDAR,
+                                period=self.period,
+                                interval=self.interval)
+        
+        return CALENDAR
+
+    def set_competition(self, competition_name, year):
+        self.competition.competition_teams=[]
+
+        for l in self.leagues:
+            self.competition.competition_teams.extend(l.teams)
+            l.set_player_result(competition_name, year, "カップ戦")
+        
+        self.competition.set_max_round(len(self.competition.competition_teams))
+        random.shuffle(self.competition.competition_teams)
+        output = pd.DataFrame(columns=["チームA", "チームB", "勝利", "スコア", "ラウンド"])
+        self.competition_result[competition_name] = output
+    
+    def set_champions_league(self, year):
+        num_team = self.continental_cups["CL"]
+        continentalcup = Continental_Cup(name="CL",
+                                         num_team=num_team)
+        competition_name = f"{continentalcup.name}_{year}"
+
+        for c in self.country_leagues:
+            l = c.leagues[0]
+            if l.league_level==1:
+                num=6
+            elif l.league_level==2:
+                num=2
+            elif l.league_level==3:
+                num=1
+            team_list = [t for t in l.teams if t.before_rank<num]
+
+            for t in team_list:
+                for p in t.affilation_players:
+                    p.set_player_result(competition_name, year, "カップ戦")
+
+            continentalcup.competition_teams.extend(team_list)
+        
+        random.shuffle(continentalcup.competition_teams)
+        continentalcup.group_stage = create_sections(num=4)
+        continentalcup.group_num = 8
+        continentalcup.tournament_stage = Competition("CL_stage")
+        continentalcup.tournament_stage.set_max_round(num_teams=16)
+
+        continentalcup.result["group_stage"] = {}
+        for group_n in range(continentalcup.group_num):
+            continentalcup.result["group_stage"][f"group_{group_n}"] = {}
+        continentalcup.result["tournament_stage"] = {}
+
+        self.continental_cups["CL"] = continentalcup
+    
+    def play_1continentalcup_section(self, year, section):
+        continentalcup = self.continental_cups["CL"]
+        season_name = f'CL_{year}'
+
+        continentalcup.play_section()
     
     def check_duplication(self):
         if len(self.free_players) != len(set(self.free_players)):

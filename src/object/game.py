@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 import sys
 sys.path.append("../")
@@ -138,11 +139,28 @@ class Game:
         if self.now_time<self.moment_num:
             self.change_player()
 
-    def battle(self):
+    def battle(self, year, kind, df_name_list):
         self.home_goal = 0
         self.away_goal = 0
 
         all_time = 90
+
+        # 必要変数をセッティング
+        for p in self.home.register_players:
+            if self.competition_name not in p.result.keys():
+                p.set_player_result(self.competition_name, year, kind)
+            p.set_game_variable()
+        
+        for p in self.away.register_players:
+            if self.competition_name not in p.result.keys():
+                p.set_player_result(self.competition_name, year, kind)
+            p.set_game_variable()
+        
+        # スターティングメンバーを作る
+        self.home.set_onfield_players(year, 58, df_name_list, self.competition_name, kind)
+        self.home.formation.cal_team_rate()
+        self.away.set_onfield_players(year, 58, df_name_list, self.competition_name, kind)
+        self.away.formation.cal_team_rate()
 
         # 試合数・ポジションカウント
         for p in self.home.formation.players_flat:

@@ -6,23 +6,9 @@ import random
 import sys
 sys.path.append("../")
 
-from config.config import N, BEST_ELEVEN_LIST
+from config.config import BEST_ELEVEN_LIST
 from src.object.game import Game
-from src.utils import create_calender
-
-class Competition:
-    def __init__(self, name):
-        self.name = name
-        self.now_round = 1
-        self.section_interval = 0
-        self.max_round = None
-    
-    def set_max_round(self, num_teams, num_section):
-        for max_round in range(N):
-            if num_teams < pow(2, max_round):
-                break
-        self.max_round = max_round
-        self.section_interval = num_section//self.max_round
+from src.object.competition import Competition
 
 class ProLeague:
     def __init__(self, name, leagues, df_name_list, competition_name=None):
@@ -33,21 +19,21 @@ class ProLeague:
 
         self.competition = None
         self.competition_name = competition_name
-        self.competition_teams = None
+        #self.competition_teams = None
         self.competition_result = {}
         self.competition_result_top = pd.DataFrame(columns=["年度", "優勝", "準優勝"])
 
         self.df_name_list = df_name_list
     
-    def set_competition(self, competition_name, year, num_section):
-        self.competition_teams=[]
+    def set_competition(self, competition_name, year):
+        self.competition.competition_teams=[]
 
         for l in self.leagues:
-            self.competition_teams.extend(l.teams)
+            self.competition.competition_teams.extend(l.teams)
             l.set_player_result(competition_name, year, "カップ戦")
         
-        self.competition.set_max_round(len(self.competition_teams), num_section)
-        random.shuffle(self.competition_teams)
+        self.competition.set_max_round(len(self.competition.competition_teams))
+        random.shuffle(self.competition.competition_teams)
         output = pd.DataFrame(columns=["チームA", "チームB", "勝利", "スコア", "ラウンド"])
         self.competition_result[competition_name] = output
     
@@ -58,6 +44,39 @@ class ProLeague:
                     p.partification = 0
                     p.partification_position = None
     
+    def set_register_member(self, injury_level=100):
+        for l in self.leagues:
+            for t in l.teams:
+                t.set_main_rate_position(injury_level=injury_level)
+                t.set_register_players(injury_level=injury_level)
+
+    def play_holiday(self):
+        for l in self.leagues:
+            for t in l.teams:
+                for p in t.register_players:
+                    p.recovery_vitality(off=True)
+    
+    def prepare_1season(self, year):
+        self.competition = Competition(name=f"{self.competition_name}_{year}",
+                                       year=year,
+                                       df_name_list=self.df_name_list)
+        self.set_competition(self.competition.name, year)
+        self.set_players_partification()
+        self.set_register_member(injury_level=100)
+        
+        # 必要変数をセッティング
+        for l in self.leagues:
+            l.set_team_leaguename()
+            season_name = f'{l.name}_{year}'
+            l.set_player_result(season_name, year, "リーグ")
+            l.set_team_result(season_name)
+                    
+    def play_1competition_section(self):
+        self.competition_result, t_result = self.competition.play_1competition_section(competition_result=self.competition_result)
+        
+        if len(t_result)>0:
+            self.competition_result_top.loc[self.competition.name, ["年度", "優勝", "準優勝"]] = t_result
+
     def cal_players_result(self, year):
         all_output = pd.DataFrame()
         for l in self.leagues:
@@ -215,100 +234,3 @@ class ProLeague:
         self.players_result = self.players_result.reset_index(drop=True)
 
         return self.players_result[((self.players_result["リーグレベル"]==1)&(self.players_result["出場時間"]>(self.leagues[0].num-1)*2*90*0.7)&(self.players_result["年度"]==year))]
-
-    def set_register_member(self, injury_level=100):
-        for l in self.leagues:
-            for t in l.teams:
-                t.set_main_rate_position(injury_level=injury_level)
-                t.set_register_players(injury_level=injury_level)
-
-    def play_holiday(self):
-        for l in self.leagues:
-            for t in l.teams:
-                for p in t.register_players:
-                    p.recovery_vitality(off=True)
-    
-    def prepare_1season(self, year):
-        league_calender = create_calender()
-        num_section = len(league_calender)
-        self.competition = Competition(name=f"{self.competition_name}_{year}")
-        self.set_competition(self.competition.name, year, num_section)
-        self.set_players_partification()
-        self.set_register_member(injury_level=100)
-        
-        # 必要変数をセッティング
-        for l in self.leagues:
-            l.set_team_leaguename()
-            season_name = f'{l.name}_{year}'
-            l.set_player_result(season_name, year, "リーグ")
-            l.set_team_result(season_name)
-                    
-    def play_1competition_section(self, year):
-        buff_teams = self.competition_teams.copy()
-        if self.competition.now_round==1:
-            self.competition_teams = self.competition_teams[:(len(self.competition_teams)-pow(2, self.competition.max_round-1))*2]
-
-        for i in range(0, len(self.competition_teams), 2):
-            game_team = self.competition_teams[i:i+2]
-            if len(game_team) < 2:
-                continue
-
-            for p in game_team[0].register_players:
-                if self.competition.name not in p.result.keys():
-                    p.set_player_result(self.competition.name, year, "カップ戦")
-                p.set_game_variable()
-            for p in game_team[1].register_players:
-                if self.competition.name not in p.result.keys():
-                    p.set_player_result(self.competition.name, year, "カップ戦")
-                p.set_game_variable()
-            
-            # スターティングメンバーを作る
-            game_team[0].set_onfield_players(year, 63, self.df_name_list, self.competition.name, "カップ戦")
-            game_team[0].formation.cal_team_rate()
-            game_team[1].set_onfield_players(year, 63, self.df_name_list, self.competition.name, "カップ戦")
-            game_team[1].formation.cal_team_rate()
-
-            cup_game = Game(home=game_team[0], 
-                            away=game_team[1], 
-                            competition_name=self.competition.name,
-                            moment_num=24,
-                            random_std=0.3,
-                            pk=1)
-            cup_game.battle()
-            if cup_game.result=="home" or cup_game.result=="home-pk":
-                win = game_team[0]
-                lose = game_team[1]
-            else:
-                win = game_team[1]
-                lose = game_team[0]
-
-            if self.competition.max_round-3 >= self.competition.now_round:
-                round_name = f"{self.competition.now_round}回戦"
-                result_name = f"{self.competition.now_round}回戦"
-            elif self.competition.max_round-2 == self.competition.now_round:
-                round_name = f"準々決勝"
-                result_name = f"ベスト8"
-            elif self.competition.max_round-1 == self.competition.now_round:
-                round_name = f"準決勝"
-                result_name = f"ベスト4"
-            elif self.competition.max_round == self.competition.now_round:
-                round_name = f"決勝"
-                result_name = f"準優勝"
-
-            if "pk" in cup_game.result:
-                score = f"{cup_game.home_goal}-{cup_game.away_goal}(pk:{cup_game.home_pk_goal}-{cup_game.away_pk_goal})"
-            else:
-                score = f"{cup_game.home_goal}-{cup_game.away_goal}"
-
-            output = pd.Series([f"{game_team[0].name}({game_team[0].league_name})", 
-                                f"{game_team[1].name}({game_team[1].league_name})",
-                                win.name, score, round_name], 
-                               index=["チームA", "チームB", "勝利", "スコア", "ラウンド"])
-            self.competition_result[self.competition.name].loc[f"{game_team[0].name}-{game_team[1].name}"] = output
-            lose.competition_result[self.competition.name] = result_name
-            buff_teams.remove(lose)
-        self.competition.now_round += 1
-        self.competition_teams = buff_teams
-        if len(self.competition_teams)<2:
-            win.competition_result[self.competition.name] = "優勝"
-            self.competition_result_top.loc[self.competition.name, ["年度", "優勝", "準優勝"]] = [year, f"{win.name}({win.league_name})", f"{lose.name}({lose.league_name})"]

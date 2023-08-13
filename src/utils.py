@@ -5,9 +5,8 @@ import cv2
 import random
 import uuid
 
-def create_calender(num=20, reverse=False):
+def create_sections(num=20, reverse=False):
     output = []
-    output_r = []
 
     for i in range(int(num/2)):
         if i==0:
@@ -28,15 +27,43 @@ def create_calender(num=20, reverse=False):
                 a.append([x, y])
                 r.append([y, x])
 
+        a.extend(r)
         output.append(a)
-        output_r.append(r)
-    output = pd.DataFrame(output).T
-    output_r = pd.DataFrame(output_r).T
 
-    output = pd.concat([output, output_r])
-    output = output.reset_index(drop=True)
+    return np.array(output)
+
+def create_sections_calendar(league, calendar, period=300, interval=7):
+    section_num = (league.num-1)*2
+    rest_days = (period-interval*section_num)//interval
+    rest_interval = section_num//rest_days
     
-    return output
+    rest = 1
+    
+    for s in range(section_num):
+        if s==rest*rest_interval:
+            #calendar[(s+rest-1)*interval][f"{league.uuid}_league"] = f" Rest_{rest}"
+            rest += 1
+        calendar[(s+rest-1)*interval][f"{league.uuid}_league"] = f"Section_{s+1}"
+    
+    league.sections = create_sections(num=league.num)
+
+def create_cup_calendar(competition, con_games, calendar, period=300, interval=7):
+    section_num = period//interval
+    cup_interval = section_num//(competition.max_round+con_games)
+    
+    section = 0
+    rest_section = 0
+    interval_ = interval//2
+    
+    for s in range(section_num):
+        if section>=competition.max_round:
+            break
+            
+        if s==cup_interval*rest_section:
+            if "CL" not in calendar[s*interval+interval_].keys():
+                calendar[s*interval+interval_][f"{competition.uuid}_cup"] = f"Cup_{section+1}"
+                section+=1
+            rest_section += 1
 
 def create_empty_position(dict_pos, players):
     for p in players:
@@ -240,3 +267,38 @@ def create_all_member(ws, now_year):
     output = pd.concat([output, free_output])
     output = output.reset_index(drop=True)
     return output
+
+"""
+def create_calender(num=20, reverse=False):
+    output = []
+    output_r = []
+
+    for i in range(int(num/2)):
+        if i==0:
+            a = [[1, num-i] for i in range(num-1)]
+            r = [[num-i, 1] for i in range(num-1)]
+        else:
+            a = []
+            r = []
+            for j in range(num-1):
+                x = i+1-j
+                y = num-j-i
+
+                if x<2:
+                    x = x+num-1
+                if y<2:
+                    y = y+num-1
+
+                a.append([x, y])
+                r.append([y, x])
+
+        output.append(a)
+        output_r.append(r)
+    output = pd.DataFrame(output).T
+    output_r = pd.DataFrame(output_r).T
+
+    output = pd.concat([output, output_r])
+    output = output.reset_index(drop=True)
+    
+    return output
+"""
