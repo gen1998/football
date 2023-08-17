@@ -131,7 +131,7 @@ class Worldsoccer:
                             p.contract=0
 
                         p.cal_all_rate()
-                        p.consider_retirement()
+                        p.consider_retirement(year)
                         p.injury = 0
         
         # 選手の成績の計算
@@ -182,22 +182,49 @@ class Worldsoccer:
                 # TODO:ここ変えたい
                 if p.age<=25:
                     p.grow_up(20)
-                    df_result = parctice_player_result(p, year)
-                    self.players_result = pd.concat([self.players_result, df_result])
-                    p.injury = 0
                 else:
                     p.grow_up(0)
-                    df_result = self_study_player_result(p, year)
-                    self.players_result = pd.concat([self.players_result, df_result])
-                    p.injury = 0
+
                 if p.main_position != "GK":
                     p.select_main_position()
                 else:
                     p.main_rate = p.cal_rate()
                 p.cal_all_rate()
 
+                p.set_history("所属なし", year)
+                p.injury = 0
                 p.free_time += 1
-                p.consider_retirement()
+                p.consider_retirement(year)
+
+            output = pd.DataFrame({"名前":[p.name for p in self.free_players],
+                                   "uuid":[p.uuid for p in self.free_players],
+                                   "年齢":[p.age for p in self.free_players],
+                                    "Rate":[p.main_rate for p in self.free_players],
+                                    "残契約":[0 for p in self.free_players],
+                                    "ポジション":[p.main_position for p in self.free_players],
+                                    "リーグ":["所属なし" for p in self.free_players],
+                                    "リーグレベル":[-1 for p in self.free_players],
+                                    "年度":[year for p in self.free_players],
+                                    "国":["所属なし" for p in self.free_players], 
+                                    "チーム":["所属なし" for p in self.free_players],
+                                    "レンタル元":["" for p in self.free_players],
+                                    "分類":["所属なし" for p in self.free_players],
+                                    "順位":["" for p in self.free_players],
+                                    "試合数":[0 for p in self.free_players],
+                                    "出場時間":[0 for p in self.free_players],
+                                    "goal":[0 for p in self.free_players],
+                                    "assist":[0 for p in self.free_players],
+                                    "CS":[0 for p in self.free_players],
+                                    "評価点":[0 for p in self.free_players],
+                                    "MOM":[0 for p in self.free_players],
+                                    "怪我欠場":[0 for p in self.free_players],
+                                    "怪我回数":[0 for p in self.free_players],
+                                    "賞":["" for p in self.free_players],
+                                    "全ポジション回数":["" for p in self.free_players],
+            })
+
+            self.players_result = pd.concat([self.players_result, output])
+
             self.players_result = self.players_result.reset_index(drop=True)
             retire_player = [p for p in self.free_players if p.retire==1]
             self.retire_players.extend(retire_player)

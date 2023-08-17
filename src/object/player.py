@@ -54,7 +54,8 @@ class FootBaller:
         self.today_rating = 0
 
         # 選手個人の結果
-        self.result = {}        
+        self.result = {}
+        self.history = {}        
 
     # 試合結果の計算
     def get_goal(self, season_name):
@@ -106,6 +107,12 @@ class FootBaller:
         self.result[competition_name]["MOM"] = 0
         self.result[competition_name]["ポジション"] = {}
         self.result[competition_name]["ポジション"][self.main_position] = 0
+    
+    def set_history(self, t_name, year):
+        if self.rental == 1:
+            self.history[year] = [t_name, self.origin_team_name]
+        else:
+            self.history[year] = [t_name]
 
     # 試合に関する変数のリセット
     def set_game_variable(self):
@@ -132,14 +139,16 @@ class FootBaller:
         self.result[season_name]["合計評価点"] += rating
 
     # 引退するか否か決定する
-    def consider_retirement(self):
-        if self.retire!=1 and self.main_rate<80:
+    def consider_retirement(self, year):
+        if self.retire!=1 and self.main_rate<85:
             rate = 0.00132*self.age*self.age - 1.18 + np.random.normal(0, 0.1) + self.injury_possibility
             if rate > np.random.rand():
                 self.retire = 1
+                self.history[year+1] = "Retire"
         
         if (self.free_time>1 and self.age>=26) or self.free_time>3:
             self.retire = 1
+            self.history[year+1] = "Retire"
 
         self.age += 1
 

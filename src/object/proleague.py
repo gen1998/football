@@ -176,7 +176,7 @@ class ProLeague:
                     p.injury = max(p.injury-10, 0)
 
                     # 引退
-                    p.consider_retirement()
+                    p.consider_retirement(year)
 
             #リーグ最多得点
             all_output = all_output.reset_index(drop=True)
