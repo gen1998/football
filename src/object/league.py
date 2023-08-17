@@ -60,6 +60,7 @@ class League:
         for t in self.teams:
             for p in t.affilation_players:
                 p.set_player_result(competition_name, year, kind)
+                p.set_history(t.name, year)
                 p.recovery_vitality(off=True)
     
     def set_team_result(self, season_name):
