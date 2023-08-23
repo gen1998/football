@@ -8,7 +8,7 @@ from tqdm import tqdm
 import sys
 sys.path.append("../")
 
-from src.utils import parctice_player_result, self_study_player_result, set_rental_transfer, create_sections_calendar, create_cup_calendar, create_sections
+from src.utils import set_rental_transfer, create_sections_calendar, create_cup_calendar, create_sections
 from src.object.proleague import Competition
 from src.object.player import Create_player
 from src.object.continental import Continental_Cup
@@ -191,7 +191,7 @@ class Worldsoccer:
                     p.main_rate = p.cal_rate()
                 p.cal_all_rate()
 
-                p.set_history("所属なし", year)
+                p.set_history("free", year)
                 p.injury = 0
                 p.free_time += 1
                 p.consider_retirement(year)

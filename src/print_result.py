@@ -5,7 +5,7 @@ import japanize_matplotlib
 import math
 
 from src.object.player import FieldPlayer
-from src.utils import team_count, country_img
+from src.utils import team_count, country_img, team_to_country, search_player_class
 
 from IPython.core.display import display
 
@@ -19,9 +19,96 @@ def print_player(WorldLeague, all_member, uuid_):
     output = output[output.uuid==uuid.UUID(f"{uuid_}")]
     #output = output[output["分類"]=="リーグ"]
     output = output.reset_index(drop=True)
-    t_name_b = ""
-    team_c = team_count(output)
+    #t_name_b = ""
+
+    t_c_dict = team_to_country(WorldLeague)
+
+    p = search_player_class(WorldLeague, uuid_)
+    team_c = team_count(p)
     plt.figure(figsize = (12, team_c*0.3)) # 図のサイズ指定
+
+    s_year = min(p.history.keys())
+    e_year = max(p.history.keys())
+
+    rental_team = []
+    rental_year = []
+
+    rental_team_b = []
+    rental_year_b = []
+
+    index = 0
+
+    for year in range(s_year, e_year+1):
+        if year == s_year:
+            team_b = p.history[year]
+            if len(team_b) > 1:
+                rental_team_b.append(team_b[0])
+                rental_year_b.append(year)
+                team_b = team_b[1]
+            else:
+                team_b = team_b[0]
+            s_year_b = s_year
+        else:
+            team = p.history[year]
+            if len(team) > 1 and team!="Retire":
+                rental_team_b.append(team[0])
+                rental_year_b.append(year)
+                team = team[1]
+            else:
+                team = team[0]
+            
+            if team_b!=team:
+                while True:
+                    pd_result = output[((output["年度"]>=s_year_b)&(output["年度"]<year)&(~output["年度"].isin(rental_year_b)))]
+                    result_txt = f'{pd_result["試合数"].sum()}({pd_result["goal"].sum()})'
+                    img, img_ = country_img(t_c_dict[team_b])
+
+                    plt.subplot(team_c, 1, index+1)
+                    plt.axis("off")
+                    plt.text(0, int(img.shape[0]*0.8), f"{s_year_b}-{year}", size=11)
+                    plt.imshow(img_)
+                    plt.text(int(4.3*img.shape[1]), int(img.shape[0]*0.8), f"{team_b}", size=11)
+                    plt.text(int(10.3*img.shape[1]), int(img.shape[0]*0.8), f"{result_txt}", size=11)
+                    #print(s_year_b, year, team_b, result_txt)
+
+                    index+=1
+                    
+                    if len(rental_team_b)>0:
+                        for t, y in zip(rental_team_b, rental_year_b):
+                            pd_result = output[output["年度"]==y]
+                            result_txt = f'{pd_result["試合数"].sum()}({pd_result["goal"].sum()})'
+                            
+                            img, img_ = country_img(t_c_dict[t], rental=True)
+
+                            plt.subplot(team_c, 1, index+1)
+                            plt.axis("off")
+                            plt.text(int(0.5*img.shape[1]), int(img.shape[0]*0.8), f"{y}-{y+1}", size=11)
+                            plt.imshow(img_)
+                            plt.text(int(3.3*img.shape[1]), int(img.shape[0]*0.8), f"→", size=11)
+                            plt.text(int(5.3*img.shape[1]), int(img.shape[0]*0.8), f"{t}(loan)", size=11)
+                            plt.text(int(10.8*img.shape[1]), int(img.shape[0]*0.8), f"{result_txt}", size=11)
+                            #print("->", y, y+1, t, result_txt)
+                            index += 1
+                    
+                    rental_team_b = rental_team
+                    rental_year_b = rental_year
+                    
+                    rental_team = []
+                    rental_year = []
+                    team_b = team
+                    s_year_b = year
+
+                    if team_b == "e" or team_b == "R":
+                        break
+
+                    if year == e_year:
+                        year+=1
+                    else:
+                        break
+            
+    plt.show()
+
+    """
         
     count = 0
     index = 0
@@ -88,10 +175,7 @@ def print_player(WorldLeague, all_member, uuid_):
         t_name_b = t_name
         c_name_b = c_name
         r_name_b = r_name
-    
-    plt.show()
-    
-    """
+
     for c in WorldLeague.country_leagues:
         for l in c.leagues:
             buff = output[output["リーグ"]==l.name]
