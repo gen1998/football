@@ -99,106 +99,25 @@ def set_rental_transfer(rental_players, t):
         p.origin_team = t
         p.origin_team_name = t.name
 
-def parctice_player_result(player, year):
-    output = pd.DataFrame({"名前":[player.name],
-                           "uuid":[player.uuid],
-                           "年齢":[player.age],
-                           "Rate":[player.main_rate],
-                           "残契約":[0],
-                           "ポジション":[player.main_position],
-                           "リーグ":["practice_league"],
-                           "リーグレベル":[-1],
-                           "年度":[year],
-                           "国":["rental"], 
-                           "チーム":["practice_team"],
-                           "レンタル元":[""],
-                           "分類":["練習リーグ"],
-                           "順位":["記録なし"],
-                           "試合数":[20],
-                           "出場時間":[1800],
-                           "goal":[0],
-                           "assist":[0],
-                           "CS":[0],
-                           "評価点":[0],
-                           "MOM":[0],
-                           "怪我欠場":[0],
-                           "怪我回数":[0],
-                           "賞":[""],
-                           "全ポジション回数":[""],
-    })
-    return output
+def team_count(p):
+    output = []
 
-"""
-def rental_player_result(player, year, team_name):
-    output = pd.DataFrame({"名前":[player.name],
-                           "uuid":[player.uuid],
-                           "年齢":[player.age],
-                           "Rate":[player.main_rate],
-                           "残契約":[player.contract],
-                           "ポジション":[player.main_position],
-                           "リーグ":["rental_league"],
-                           "年度":[year],
-                           "国":["rental"], 
-                           "チーム":["rental_team"],
-                           "レンタル元":[team_name],
-                           "分類":["レンタルリーグ"],
-                           "順位":["記録なし"],
-                           "試合数":[30],
-                           "出場時間":[1800],
-                           "goal":[0],
-                           "assist":[0],
-                           "CS":[0],
-                           "評価点":[0],
-                           "MOM":[0],
-                           "怪我欠場":[0],
-                           "怪我回数":[0],
-                           "賞":[""],
-                           "全ポジション回数":[""],
-    })
-    return output
-"""
-
-def self_study_player_result(player, year):
-    output = pd.DataFrame({"名前":[player.name],
-                           "uuid":[player.uuid],
-                           "年齢":[player.age],
-                           "Rate":[player.main_rate],
-                           "残契約":[0],
-                           "ポジション":[player.main_position],
-                           "国":["rental"], 
-                           "リーグ":["所属なし"],
-                           "リーグレベル":[-1],
-                           "年度":[year],
-                           "チーム":["所属なし"],
-                           "レンタル元":[""],
-                           "分類":["自主練"],
-                           "順位":["記録なし"],
-                           "試合数":[0],
-                           "出場時間":[0],
-                           "goal":[0],
-                           "assist":[0],
-                           "CS":[0],
-                           "評価点":[0],
-                           "MOM":[0],
-                           "怪我欠場":[0],
-                           "怪我回数":[0],
-                           "賞":[""],
-                           "全ポジション回数":[""],
-    })
-    return output
-
-def team_count(output):
-    result = output[output["分類"]!="カップ戦"]["チーム"].values
-
-    count = 1
-    c = result[0]
-
-    for r in result:
-        if c!=r:
-            count+=1
-            c=r
+    for y, v in p.history.items():
+        if y==min(p.history.keys()):
+            output.append(v[0])
+            v_b = v[0]
+            
+        elif len(v) ==1:
+            if v_b != v[0]:
+                output.append(v[0])
+                v_b = v[0]
+        else:
+            output.append(v[0])
+            if v_b != v[1]:
+                output.append(v[1])
+                v_b = v[1]
     
-    return count
+    return len((output))
 
 def country_img(name, rental=False):
     img = cv2.imread(f"../../data/img/{name}.png")
@@ -267,6 +186,34 @@ def create_all_member(ws, now_year):
     output = pd.concat([output, free_output])
     output = output.reset_index(drop=True)
     return output
+
+def team_to_country(WorldLeague):
+    team_list = [(t.name, c.name) for c in WorldLeague.country_leagues for l in c.leagues for t in l.teams]
+    output = {}
+    
+    for (t,c) in team_list:
+        output[t] = c
+    
+    output["free"] = "free"
+    output["所属なし"] = "free"
+    
+    return output
+
+def search_player_class(WorldLeague, uuid_):
+    p = [p for c in WorldLeague.country_leagues for l in c.leagues for t in l.teams for p in t.affilation_players if p.uuid==uuid.UUID(f"{uuid_}")]
+    
+    if len(p)>0:
+        return p[0]
+    
+    p = [p for p in WorldLeague.retire_players if p.uuid==uuid.UUID(f"{uuid_}")]
+    
+    if len(p)>0:
+        return p[0]
+    
+    p = [p for p in WorldLeague.free_players if p.uuid==uuid.UUID(f"{uuid_}")]
+    
+    if len(p)>0:
+        return p[0]
 
 """
 def create_calender(num=20, reverse=False):

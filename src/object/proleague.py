@@ -189,7 +189,7 @@ class ProLeague:
             l.champion.loc[season_name, "得点王"] += f"  /  {df_search.loc[index, 'goal']}点"
 
             #リーグMVP
-            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.7))]
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.8))]
             df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
             l.champion.loc[season_name, "MVP"] = ""
             for index in df_search_index[:1]:
@@ -205,7 +205,7 @@ class ProLeague:
                 l.champion.loc[season_name, "yMVP"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
             
             #GK_MVP
-            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.7))]
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.8))]
             df_search = df_search[df_search["ポジション"]=="GK"]
             df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
             l.champion.loc[season_name, "ベストGK"] = ""
@@ -214,7 +214,7 @@ class ProLeague:
                 l.champion.loc[season_name, "ベストGK"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
             
             #ベストイレブン
-            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.7))]
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.8))]
             for position, num in BEST_ELEVEN_LIST:
                 df_search_index = df_search[df_search["ポジション"].isin(position)].sort_values("評価点", ascending=False).index.tolist()[:num]
                 for index in df_search_index:
@@ -233,4 +233,4 @@ class ProLeague:
         self.players_result = pd.concat([self.players_result, all_output])
         self.players_result = self.players_result.reset_index(drop=True)
 
-        return self.players_result[((self.players_result["リーグレベル"]==1)&(self.players_result["出場時間"]>(self.leagues[0].num-1)*2*90*0.7)&(self.players_result["年度"]==year))]
+        return self.players_result[((self.players_result["リーグレベル"]==1)&(self.players_result["出場時間"]>(self.leagues[0].num-1)*2*90*0.8)&(self.players_result["年度"]==year))]
