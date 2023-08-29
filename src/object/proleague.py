@@ -183,26 +183,88 @@ class ProLeague:
             df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name))]
             df_search_index = df_search.loc[df_search["goal"]==df_search["goal"].max(), :].index.tolist()
             l.champion.loc[season_name, "得点王"] = ""
-            for index in df_search_index:
+            b_goal = df_search["goal"].max()
+            for j, index in enumerate(df_search_index):
+                p_name = df_search.loc[index, '名前']
+                uuid_name = f"{p_name}_{df_search.loc[index, 'uuid']}"
                 all_output.loc[index, "賞"] += f"得点王({season_name}),"
-                l.champion.loc[season_name, "得点王"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
-            l.champion.loc[season_name, "得点王"] += f"  /  {df_search.loc[index, 'goal']}点"
+                l.champion.loc[season_name, "得点王"] += f"{p_name}({df_search.loc[index, 'チーム']}), "
+
+                # リーグ記録保存
+                l.cal_1record_player(year, p_name, uuid_name, j,
+                                     record_name="得点王", record_name_max="最多得点王",
+                                     value=b_goal, value_record_name="最多ゴール")
+
+            l.champion.loc[season_name, "得点王"] += f"  /  {b_goal}点"
+
+            #リーグ最多アシスト
+            all_output = all_output.reset_index(drop=True)
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name))]
+            df_search_index = df_search.loc[df_search["assist"]==df_search["assist"].max(), :].index.tolist()
+            b_assist = df_search["assist"].max()
+            for j, index in enumerate(df_search_index):
+                p_name = df_search.loc[index, '名前']
+                uuid_name = f"{p_name}_{df_search.loc[index, 'uuid']}"
+
+                # リーグ記録保存
+                l.cal_1record_player(year, p_name, uuid_name, j,
+                                     value=b_assist, value_record_name="最多アシスト")
+            
+            #リーグ最多CS
+            all_output = all_output.reset_index(drop=True)
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name))]
+            df_search_index = df_search.loc[df_search["CS"]==df_search["CS"].max(), :].index.tolist()
+            b_assist = df_search["CS"].max()
+            for j, index in enumerate(df_search_index):
+                p_name = df_search.loc[index, '名前']
+                uuid_name = f"{p_name}_{df_search.loc[index, 'uuid']}"
+
+                # リーグ記録保存
+                l.cal_1record_player(year, p_name, uuid_name, j,
+                                     value=b_assist, value_record_name="最多CS")
+            
+            #リーグ最多アシスト
+            all_output = all_output.reset_index(drop=True)
+            df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name))]
+            df_search_index = df_search.loc[df_search["MOM"]==df_search["MOM"].max(), :].index.tolist()
+            b_assist = df_search["MOM"].max()
+            for j, index in enumerate(df_search_index):
+                p_name = df_search.loc[index, '名前']
+                uuid_name = f"{p_name}_{df_search.loc[index, 'uuid']}"
+
+                # リーグ記録保存
+                l.cal_1record_player(year, p_name, uuid_name, j,
+                                     value=b_assist, value_record_name="最多MOM")
 
             #リーグMVP
             df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.8))]
             df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
             l.champion.loc[season_name, "MVP"] = ""
+            b_value = df_search["評価点"].max()
             for index in df_search_index[:1]:
+                p_name = df_search.loc[index, '名前']
+                uuid_name = f"{df_search.loc[index, '名前']}_{df_search.loc[index, 'uuid']}"
                 all_output.loc[index, "賞"] += f"MVP({season_name}),"
-                l.champion.loc[season_name, "MVP"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
+                l.champion.loc[season_name, "MVP"] += f"{p_name}({df_search.loc[index, 'チーム']}), "
+
+                # リーグ記録保存
+                l.cal_1record_player(year, p_name, uuid_name, j,
+                                     record_name="MVP", record_name_max="最多MVP",
+                                     value=b_value, value_record_name="最高評点")
             
             #若手MVP
             df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.5)&(all_output["年齢"]<24))]
             df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
             l.champion.loc[season_name, "yMVP"] = ""
             for index in df_search_index[:1]:
+                p_name = df_search.loc[index, '名前']
+                uuid_name = f"{df_search.loc[index, '名前']}_{df_search.loc[index, 'uuid']}"
                 all_output.loc[index, "賞"] += f"yMVP({season_name}),"
-                l.champion.loc[season_name, "yMVP"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
+                l.champion.loc[season_name, "yMVP"] += f"{p_name}({df_search.loc[index, 'チーム']}), "
+                
+                # リーグ記録保存
+                l.cal_1record_player(year, p_name, uuid_name, j,
+                                     record_name="yMVP", record_name_max="最多yMVP")
             
             #GK_MVP
             df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.8))]
@@ -210,15 +272,32 @@ class ProLeague:
             df_search_index = df_search.loc[df_search["評価点"]==df_search["評価点"].max(), :].index.tolist()
             l.champion.loc[season_name, "ベストGK"] = ""
             for index in df_search_index[:1]:
+                p_name = df_search.loc[index, '名前']
+                uuid_name = f"{df_search.loc[index, '名前']}_{df_search.loc[index, 'uuid']}"
                 all_output.loc[index, "賞"] += f"ベストGK({season_name}),"
                 l.champion.loc[season_name, "ベストGK"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}), "
+
+                # リーグ記録保存
+                l.cal_1record_player(year, p_name, uuid_name, j,
+                                     record_name="ベストGK", record_name_max="最多ベストGK")
             
             #ベストイレブン
             df_search = all_output[((all_output["分類"]=="リーグ")&(all_output["リーグ"]==l.name)&(all_output["出場時間"]>(l.num-1)*2*90*0.8))]
             for position, num in BEST_ELEVEN_LIST:
                 df_search_index = df_search[df_search["ポジション"].isin(position)].sort_values("評価点", ascending=False).index.tolist()[:num]
                 for index in df_search_index:
+                    p_name = df_search.loc[index, '名前']
+                    uuid_name = f"{df_search.loc[index, '名前']}_{df_search.loc[index, 'uuid']}"
                     all_output.loc[index, "賞"] += f"ベストイレブン({season_name}),"
+
+                    # リーグ記録保存
+                    l.cal_1record_player(year, p_name, uuid_name, j,
+                                         record_name="ベストイレブン", record_name_max="最多ベストイレブン")
+            """
+            if l.category == "top":
+                print(l.player_record)
+                print(l.all_record)
+                """
         
         # コンペティション最多得点
         all_output = all_output.reset_index(drop=True)
