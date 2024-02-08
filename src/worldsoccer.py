@@ -142,6 +142,8 @@ class Worldsoccer:
         
         Ballond = Ballond.sort_values("評価点", ascending=False).iloc[:1]
         for c in self.country_leagues:
+            print(c.leagues[0].name)
+            print(Ballond["リーグ"].values[0])
             if c.leagues[0].name == Ballond["リーグ"].values[0]:
                 c.players_result.loc[Ballond.index, "賞"]+=f"Ballon d'Or_{year}, "
                 break
