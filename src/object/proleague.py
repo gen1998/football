@@ -312,4 +312,4 @@ class ProLeague:
         self.players_result = pd.concat([self.players_result, all_output])
         self.players_result = self.players_result.reset_index(drop=True)
 
-        return self.players_result[((self.players_result["リーグレベル"]==1)&(self.players_result["出場時間"]>(self.leagues[0].num-1)*2*90*0.8)&(self.players_result["年度"]==year)&(all_output["試合数"]>(l.num-1)*2*0.85))]
+        return self.players_result[((self.players_result["リーグレベル"]==1)&(self.players_result["出場時間"]>(self.leagues[0].num-1)*2*90*0.8)&(self.players_result["年度"]==year)&(self.players_result["試合数"]>(l.num-1)*2*0.85))]
