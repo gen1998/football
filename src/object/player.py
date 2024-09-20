@@ -6,6 +6,7 @@ import sys
 sys.path.append("../")
 
 from config.config import ALL_POSITON, ALL_POSITON_LOW
+from src.utils import rate_function
 
 class FootBaller:
     def __init__(self, name, age, now_year, main_position, injury_possibility, grow_position_type, recovery_power):
@@ -38,6 +39,7 @@ class FootBaller:
 
         # 能力値
         self.main_rate = None
+        self.evaluate_rate = None
         self.grow_type = random.choices(["legend", "genius", "general", "grass"], weights=[10, 60, 350, 580])[0]
         self.grow_exp_dict = {}
         self.position_all_rate = {}
@@ -129,11 +131,11 @@ class FootBaller:
     
     # 試合のレーティング計算
     def cal_rating(self, season_name, min_rate, max_rate, enemy_goal, result, all_time=90):
-        random_rating = (self.position_all_rate[self.partification_position]-min_rate)/(max_rate-min_rate)*self.today_playing_time/all_time*min(np.random.normal(0.7, 0.2), 1.0)
+        random_rating = (self.position_all_rate[self.partification_position]-min_rate)/(max_rate-min_rate)*self.today_playing_time/all_time*min(np.random.normal(1.0, 0.2), 2.0)
         rating = 5.0+self.today_goal+self.today_assist*1.2+result+random_rating
 
         if self.partification_position in ["LB", "RB", "CB", "CDM", "GK"] and enemy_goal==0:
-            rating += 1
+            rating += 1.5
         rating = min(rating, 10)
         self.today_rating = rating
         self.result[season_name]["合計評価点"] += rating
@@ -371,6 +373,27 @@ class FieldPlayer(FootBaller):
         self.defending_exp -= value
         self.physicality_exp -= value
 
+    def cal_evaluate_rate(self, season_name, competition_name, league_level):
+        evaluate_rate_before = self.evaluate_rate
+        season_evaluate = self.result[season_name]["合計評価点"]
+        competition_evaluate = self.result[competition_name]["合計評価点"]
+        if (self.result[season_name]["試合数"]+self.result[competition_name]["試合数"])>0:
+            mean_evaluate = (season_evaluate+competition_evaluate)/(self.result[season_name]["試合数"]+self.result[competition_name]["試合数"])
+            coe = (self.result[season_name]["出場時間"]+self.result[competition_name]["出場時間"])/5000 + 0.5
+            coe = min(1.0, coe)
+            mean_evaluate = mean_evaluate*coe
+        else:
+            mean_evaluate = 1.5
+        evaluate_rate = rate_function(mean_evaluate, league_level=league_level)
+
+        if self.result[season_name]["怪我欠場"]>10:
+            evaluate_rate = 0.1*evaluate_rate + 0.9*evaluate_rate_before
+        elif evaluate_rate_before>evaluate_rate:
+            evaluate_rate = 0.3*evaluate_rate + 0.7*evaluate_rate_before
+        else:
+            evaluate_rate = 0.8*evaluate_rate + 0.2*evaluate_rate_before
+        self.evaluate_rate = evaluate_rate
+
 class GK(FootBaller):
     def __init__(self, name, age, now_year, position, diving, 
                  handling, kicking, reflexes, 
@@ -486,6 +509,26 @@ class GK(FootBaller):
         self.speed_initial -= value
         self.positioning_initial -= value
 
+    def cal_evaluate_rate(self, season_name, competition_name, league_level):
+        evaluate_rate_before = self.evaluate_rate
+        season_evaluate = self.result[season_name]["合計評価点"]
+        competition_evaluate = self.result[competition_name]["合計評価点"]
+        if (self.result[season_name]["試合数"]+self.result[competition_name]["試合数"])>0:
+            mean_evaluate = (season_evaluate+competition_evaluate)/(self.result[season_name]["試合数"]+self.result[competition_name]["試合数"])
+            coe = (self.result[season_name]["出場時間"]+self.result[competition_name]["出場時間"])/5000 + 0.5
+            coe = min(1.0, coe)
+            mean_evaluate = mean_evaluate*coe
+        else:
+            mean_evaluate = 1.5
+        evaluate_rate = rate_function(mean_evaluate, league_level=league_level)
+        if self.result[season_name]["怪我欠場"]>10:
+            evaluate_rate = 0.2*evaluate_rate + 0.8*evaluate_rate_before
+        elif evaluate_rate_before>evaluate_rate:
+            evaluate_rate = 0.3*evaluate_rate + 0.7*evaluate_rate_before
+        else:
+            evaluate_rate = 0.8*evaluate_rate + 0.2*evaluate_rate_before
+        self.evaluate_rate = evaluate_rate
+
 class Create_player:
     def __init__(self, position_num, min_rate, max_rate, age_mean, df_name_list, 
                  mean_rate=75, now_year=1900):
@@ -543,6 +586,7 @@ class Create_player:
 
                 A.cal_all_rate()
                 A.set_contract()
+                A.evaluate_rate = A.main_rate
                 count += 1
                 self.players.append(A)
                 if count >= num:
@@ -585,6 +629,7 @@ class Create_player:
                 A.age += 1
 
             A.main_rate = A.cal_rate()
+            A.evaluate_rate = A.main_rate
             A.cal_all_rate()
             A.set_contract()
 

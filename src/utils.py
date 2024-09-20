@@ -215,6 +215,28 @@ def search_player_class(WorldLeague, uuid_):
     if len(p)>0:
         return p[0]
 
+def rate_function(x, league_level):
+    if league_level==1:
+        #y = 1/30*(x**3)+3/10*(x**2)-11/15*x+73
+        #y = 1/15*(x**3)+4/15*(x**2)-37/15*x+75+1/3
+        y = 1*(x**3)-25/2*(x**2)+99/2*x+15
+        y = max(min(y, 95), 70)
+    elif league_level==2:
+        #y = 7/30*(x**3)-29/10*(x**2)+208/15*x+47
+        y = 8/15*(x**3)-61/10*(x**2)+707/30*x+35
+        y = max(min(y, 85), 60)
+    elif league_level==3:
+        #y = 7/30*(x**3)-29/10*(x**2)+208/15*x+42
+        y = 8/15*(x**3)-61/10*(x**2)+707/30*x+30
+        y = max(min(y, 80), 50)
+    elif league_level==4:
+        #y = 7/30*(x**3)-29/10*(x**2)+208/15*x+38
+        y = 8/15*(x**3)-61/10*(x**2)+707/30*x+26
+        y = max(min(y, 75), 45)
+    else:
+        return 0
+    return int(y)
+
 """
 def create_calender(num=20, reverse=False):
     output = []
