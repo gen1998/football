@@ -96,6 +96,7 @@ class ProLeague:
                                         "uuid":[p.uuid for p in t.register_players],
                                         "年齢":[result["年齢"] for result in season_result],
                                         "Rate" : [p.main_rate for p in t.register_players],
+                                        "E_Rate" : [p.evaluate_rate for p in t.register_players],
                                         "残契約":[p.contract-1 for p in t.register_players],
                                         "ポジション":[sorted(result["ポジション"].items(), key=lambda x:x[1], reverse=True)[0][0] for result in season_result],
                                         "国":[self.name for i in range(len(t.register_players))],
@@ -123,6 +124,7 @@ class ProLeague:
                                         "uuid":[p.uuid for p in t.register_players],
                                         "年齢":[result["年齢"] for result in competition_result],
                                         "Rate" : [p.main_rate for p in t.register_players],
+                                        "E_Rate" : [p.evaluate_rate for p in t.register_players],
                                         "残契約":[p.contract-1 for p in t.register_players],
                                         "ポジション":[sorted(result["ポジション"].items(), key=lambda x:x[1], reverse=True)[0][0] for result in competition_result],
                                         "リーグ":[l.name for i in range(len(t.register_players))],
@@ -170,6 +172,7 @@ class ProLeague:
                         p.select_main_position()
                     else:
                         p.main_rate = p.cal_rate()
+                    p.cal_evaluate_rate(season_name, self.competition.name, l.league_level)
                     p.cal_all_rate()
 
                     # offseason分怪我を経過させる

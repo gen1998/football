@@ -273,9 +273,9 @@ class Game:
 
         min_rate, max_rate=cal_game_rating_rate(self.home)
         if self.result=="home":
-            easy_result = 1
+            easy_result = 0.2
         elif self.result=="away":
-            easy_result = -1
+            easy_result = -0.2
         else:
             easy_result = 0
         for p in self.home.register_players:
@@ -285,9 +285,9 @@ class Game:
         
         min_rate, max_rate=cal_game_rating_rate(self.away)
         if self.result=="home":
-            easy_result = -1
+            easy_result = -0.2
         elif self.result=="away":
-            easy_result = 1
+            easy_result = 0.2
         else:
             easy_result = 0
         for p in self.away.register_players:

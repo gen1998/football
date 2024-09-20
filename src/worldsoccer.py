@@ -89,6 +89,7 @@ class Worldsoccer:
                                     "uuid":[p.uuid for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "年齢":[p.age for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "Rate" : [p.main_rate for l in c.leagues for t in l.teams for p in t.not_register_players],
+                                    "E_Rate" : [p.evaluate_rate for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "残契約":[p.contract-1 for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "ポジション":[p.main_position for l in c.leagues for t in l.teams for p in t.not_register_players],
                                     "リーグ":["Under League" for l in c.leagues for t in l.teams for p in t.not_register_players],
@@ -131,6 +132,7 @@ class Worldsoccer:
                             p.contract=0
 
                         p.cal_all_rate()
+                        p.evaluate_rate = p.main_rate
                         p.consider_retirement(year)
                         p.injury = 0
         
@@ -190,6 +192,7 @@ class Worldsoccer:
                 else:
                     p.main_rate = p.cal_rate()
                 p.cal_all_rate()
+                p.evaluate_rate = p.evaluate_rate-2
 
                 p.set_history("free", year)
                 p.injury = 0
@@ -200,6 +203,7 @@ class Worldsoccer:
                                    "uuid":[p.uuid for p in self.free_players],
                                    "年齢":[p.age for p in self.free_players],
                                     "Rate":[p.main_rate for p in self.free_players],
+                                    "E_Rate":[p.evaluate_rate for p in self.free_players],
                                     "残契約":[0 for p in self.free_players],
                                     "ポジション":[p.main_position for p in self.free_players],
                                     "リーグ":["free" for p in self.free_players],
