@@ -48,4 +48,12 @@ def create_Proleague(name, name_competition,
         leagues.append(L_class)
 
     PL = ProLeague(name=name, leagues=leagues, df_name_list=df_name_list, competition_name=name_competition)
+    
+    for index, l in enumerate(PL.leagues):
+        l.country_uuid = PL.uuid
+        if l.category != "top":
+            l.upperleague_uuid = PL.leagues[index-1].uuid
+        if l.category != "lowest":
+            l.lowerleague_uuid = PL.leagues[index+1].uuid
+            
     return PL

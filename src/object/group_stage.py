@@ -1,4 +1,3 @@
-import uuid
 import numpy as np
 import pandas as pd
 
@@ -7,14 +6,15 @@ sys.path.append("../")
 
 from src.object.game import Game
 from src.utils import create_sections
+from src.object.object import Object
 
 def apply_points(row):
     return row.win*3+row.row
 
-class Group_Stage:
+class Group_Stage(Object):
     def __init__(self, name, year, group_num, g_team_num, df_name_list):
+        super().__init__()
         self.name = name
-        self.uuid = uuid.uuid1()
         self.year = year
 
         self.competition_teams = []

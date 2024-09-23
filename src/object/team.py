@@ -1,18 +1,18 @@
 import pandas as pd
 import random
-import uuid
 
 import sys
 sys.path.append("../")
 
 from config.config import ALL_POSITON_LOW, ALL_POSITON_LOW_GK, BENCH_POSITION_NUM, POSITION_LOW_DICT, YOUNG_OLD
 from src.object.player import Create_player
+from src.object.object import Object
 
-class Team:
+class Team(Object):
     def __init__(self, name, formation, member_num=30, before_rank=1):
         # 固定値
+        super().__init__()
         self.name = name
-        self.uuid = uuid.uuid1()
         self.league_name = None
         self.member_num = member_num
         self.formation = formation

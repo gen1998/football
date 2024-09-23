@@ -1,5 +1,4 @@
 import numpy as np
-import uuid
 import random
 
 import sys
@@ -7,11 +6,12 @@ sys.path.append("../")
 
 from config.config import ALL_POSITON, ALL_POSITON_LOW
 from src.utils import rate_function
+from src.object.object import Object
 
-class FootBaller:
+class FootBaller(Object):
     def __init__(self, name, age, now_year, main_position, injury_possibility, grow_position_type, recovery_power):
         # 選手固有の値
-        self.uuid = uuid.uuid1()
+        super().__init__()
         self.name = name
         self.age = age
         self.born_year = now_year-age

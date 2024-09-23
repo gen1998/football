@@ -1,4 +1,3 @@
-import uuid
 import math
 import pandas as pd
 
@@ -7,11 +6,12 @@ sys.path.append("../")
 
 from src.object.group_stage import Group_Stage
 from src.object.competition import Competition
+from src.object.object import Object
 
-class Continental_Cup:
+class Continental_Cup(Object):
     def __init__(self, name, year, df_name_list):
+        super().__init__()
         self.name = f"{name}_{year}"
-        self.uuid = uuid.uuid1()
         self.year = year
         self.competition_teams = []
 

@@ -1,4 +1,3 @@
-import uuid
 import pandas as pd
 
 import sys
@@ -6,11 +5,12 @@ sys.path.append("../")
 
 from config.config import N
 from src.object.game import Game
+from src.object.object import Object
 
-class Competition:
+class Competition(Object):
     def __init__(self, name, year, df_name_list):
+        super().__init__()
         self.name = name
-        self.uuid = uuid.uuid1()
         self.year = year
 
         self.now_round = 1
