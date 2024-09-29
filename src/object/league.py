@@ -61,7 +61,6 @@ class League(Object):
         self.promotion_num = promotion_num
 
         self.df_name_list = df_name_list
-        self.set_team_leaguename()
     
     def set_record_keys(self):
         self.teams_record["champions"] = {}
@@ -85,26 +84,42 @@ class League(Object):
 
         for n in record_name:
             self.all_record[n] = [-1, []]
-
     
-    def set_team_leaguename(self):
-        for t in self.teams:
-            t.league_name = self.name
-    
-    def set_player_result(self, competition_name, year, kind):
-        for t in self.teams:
-            for p in t.affilation_players:
-                p.set_player_result(competition_name, year, kind)
-                p.set_history(t.name, year)
-                p.recovery_vitality(off=True)
-    
-    def set_team_result(self, season_name):
-        all_team_name = [s.name for s in self.teams]
+    def set_team_result(self, season_name, all_team_name):
         output = pd.DataFrame(np.zeros((len(all_team_name), 5)), 
                               index=all_team_name, 
                               columns=["win", "lose", "row", "得点", "失点"], 
                               dtype=np.int8)
         self.team_result[season_name] = output
+    
+    def play_1section(self, year, home, away):
+        season_name = f'{self.name}_{year}'
+        
+        game = Game(home=home, away=away,
+                    competition_name=season_name,
+                    moment_num=24, random_std=0.3)
+        game.battle(year=year,
+                    kind="リーグ",
+                    df_name_list=self.df_name_list)
+
+        home_team_name = home.name
+        away_team_name = away.name
+
+        if game.result=="home":
+            self.team_result[season_name].loc[home_team_name, "win"] += 1
+            self.team_result[season_name].loc[away_team_name, "lose"] += 1
+        elif game.result=="away":
+            self.team_result[season_name].loc[away_team_name, "win"] += 1
+            self.team_result[season_name].loc[home_team_name, "lose"] += 1
+        else:
+            self.team_result[season_name].loc[home_team_name, "row"] += 1
+            self.team_result[season_name].loc[away_team_name, "row"] += 1
+
+        self.team_result[season_name].loc[home_team_name, "得点"] += game.home_goal
+        self.team_result[season_name].loc[home_team_name, "失点"] += game.away_goal
+
+        self.team_result[season_name].loc[away_team_name, "得点"] += game.away_goal
+        self.team_result[season_name].loc[away_team_name, "失点"] += game.home_goal
     
     def cal_team_rank(self, year):
         season_name = f'{self.name}_{year}'
@@ -116,11 +131,11 @@ class League(Object):
         self.team_result[season_name]["順位"] = [i for i in range(1, self.num+1)]
         self.team_result[season_name]["リーグ名"] = [f"{self.name}" for _ in range(self.num)]
     
-    def cal_1year_result(self, year):
+    def cal_1year_result(self, year, teams):
         season_name = f'{self.name}_{year}'
         self.cal_team_rank(year)
         
-        for team in self.teams:
+        for team in teams:
             team.result.loc[season_name] = self.team_result[season_name].loc[team.name, :]
             team.rank_point += int(self.team_result[season_name].loc[team.name, "順位"]+(self.league_level-1)*20)
             team.rank_point_list.append(team.rank_point)
@@ -136,58 +151,26 @@ class League(Object):
         # 昇格決定
         if self.category!="top":
             promotion_teams = list(self.team_result[season_name][:self.promotion_num].index)
-            self.promotion[season_name] = promotion_teams
-
             for t in promotion_teams:
                 if t in self.teams_record["promotion"].keys():
                     self.teams_record["promotion"][t] += 1
                 else:
                     self.teams_record["promotion"][t] = 1
+            
+            self.promotion[season_name] = [t.uuid for t in teams if t.name in promotion_teams]
         
         #降格決定
         if self.category!="lowest":
             relegation_teams = list(self.team_result[season_name][-self.relegation_num:].index)
-            self.relegation[season_name] = relegation_teams
-
             for t in relegation_teams:
                 if t in self.teams_record["relegation"].keys():
                     self.teams_record["relegation"][t] += 1
                 else:
                     self.teams_record["relegation"][t] = 1
+            
+            self.relegation[season_name] = [t.uuid for t in teams if t.name in relegation_teams]
         
         self.cal_leagure_record(season_name, year)
-        
-    def play_1section(self, year, sections):
-        season_name = f'{self.name}_{year}'
-        
-        for section in sections:            
-            game = Game(home=self.teams[section[0]-1], 
-                        away=self.teams[section[1]-1],
-                        competition_name=season_name,
-                        moment_num=24,
-                        random_std=0.3)
-            game.battle(year=year,
-                        kind="リーグ",
-                        df_name_list=self.df_name_list)
-
-            home_team_name = self.teams[section[0]-1].name
-            away_team_name = self.teams[section[1]-1].name
-
-            if game.result=="home":
-                self.team_result[season_name].loc[home_team_name, "win"] += 1
-                self.team_result[season_name].loc[away_team_name, "lose"] += 1
-            elif game.result=="away":
-                self.team_result[season_name].loc[away_team_name, "win"] += 1
-                self.team_result[season_name].loc[home_team_name, "lose"] += 1
-            else:
-                self.team_result[season_name].loc[home_team_name, "row"] += 1
-                self.team_result[season_name].loc[away_team_name, "row"] += 1
-
-            self.team_result[season_name].loc[home_team_name, "得点"] += game.home_goal
-            self.team_result[season_name].loc[home_team_name, "失点"] += game.away_goal
-
-            self.team_result[season_name].loc[away_team_name, "得点"] += game.away_goal
-            self.team_result[season_name].loc[away_team_name, "失点"] += game.home_goal
     
     def cal_leagure_record(self, season_name, year):
         champions = [kv for kv in self.teams_record["champions"].items() if kv[1] == max(self.teams_record["champions"].values())]
@@ -270,11 +253,11 @@ class League(Object):
                 else:
                     self.all_record[value_record_name][1].append(f"{player_name}({year})")
     
-    def cal_players_result(self, year, country_name, competition_name):
+    def cal_players_result(self, year, teams, country_name, competition_name):
         all_output = pd.DataFrame()
         season_name = f'{self.name}_{year}'
         league_rank = self.team_result[season_name].index.tolist()
-        for t in self.teams:
+        for t in teams:
             # リーグ途中参戦の選手の結果を追加する
             for p in t.register_players:
                 if competition_name not in p.result.keys():

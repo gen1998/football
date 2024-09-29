@@ -33,7 +33,7 @@ class FootBaller(Object):
         self.injury = 0
         self.contract = 0
         self.free_time = 0
-        self.origin_team = None
+        self.origin_team_uuid = None
         self.origin_team_name = ""
         self.b_team_count = 0
 

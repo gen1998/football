@@ -45,6 +45,9 @@ def create_Proleague(name, name_competition,
                     max_bench_mean_rate=LL["max_bench_rate_mean"],
                     bench_num=9
                     )
+        for t in L_class.teams:
+            t.league_uuid = L_class.uuid
+            t.league_name = L_class.name
         leagues.append(L_class)
 
     PL = ProLeague(name=name, leagues=leagues, df_name_list=df_name_list, competition_name=name_competition)

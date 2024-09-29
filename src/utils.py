@@ -1,11 +1,9 @@
 import numpy as np
 import pandas as pd
 import cv2
-
-import random
 import uuid
 
-def create_sections(num=20, reverse=False):
+def create_sections(num=20):
     output = []
 
     for i in range(int(num/2)):
@@ -32,24 +30,25 @@ def create_sections(num=20, reverse=False):
 
     return np.array(output)
 
-def create_sections_calendar(league, calendar, period=300, interval=7):
+def create_sections_calendar(league, teams, calendar, period=300):
     section_num = (league.num-1)*2
-    rest_days = (period-interval*section_num)//interval
-    rest_interval = section_num//rest_days
+    sections = create_sections(num=league.num)
+    interval = period//(section_num-1)
+    day = 0
     
-    rest = 1
-    
-    for s in range(section_num):
-        if s==rest*rest_interval:
-            #calendar[(s+rest-1)*interval][f"{league.uuid}_league"] = f" Rest_{rest}"
-            rest += 1
-        calendar[(s+rest-1)*interval][f"{league.uuid}_league"] = f"Section_{s+1}"
-    
-    league.sections = create_sections(num=league.num)
+    for section in range(section_num):
+        combs = sections[:, section]
+        for comb in combs:
+            home = teams[comb[0]-1]
+            away = teams[comb[1]-1]
+            calendar[day][home.uuid] = (away.uuid, section+1, "league", league.uuid)
+            calendar[day][away.uuid] = (home.uuid, section+1, "league", league.uuid)
+        day += interval
 
-def create_cup_calendar(competition, con_games, calendar, period=300, interval=7):
+def create_cup_calendar(competition, calendar, period=300, interval=7):
+    competition_rest_teams_uuid = competition.competition_teams_uuid
     section_num = period//interval
-    cup_interval = section_num//(competition.max_round+con_games)
+    cup_interval = section_num//(competition.max_round)
     
     section = 0
     rest_section = 0
@@ -64,6 +63,40 @@ def create_cup_calendar(competition, con_games, calendar, period=300, interval=7
                 calendar[s*interval+interval_][f"{competition.uuid}_cup"] = f"Cup_{section+1}"
                 section+=1
             rest_section += 1
+
+def search_empty_day(calendar, home_uuid, away_uuid, now_day, rest_interval=3, deadline=30):
+    home_game = []
+    away_game = []
+    home_empty_days = []
+    away_empty_days = []
+    empty_days = []
+    
+    for day, section in enumerate(calendar[now_day:]):
+        if home_uuid in section.keys():
+            home_game.append(day)
+        if away_uuid in section.keys():
+            away_game.append(day)
+        
+        if len(home_game)==2:
+            lower = home_game[0]+rest_interval
+            upper = home_game[1]-rest_interval
+            home_empty_days.extend(list(range(lower+1, upper)))
+            home_game = home_game[1:]
+        
+        if len(away_game)==2:
+            lower = away_game[0]+rest_interval
+            upper = away_game[1]+rest_interval
+            away_empty_days.extend(list(range(lower+1, upper)))
+            away_game = away_game[1:]
+        
+        if len(home_empty_days)>0 and len(away_empty_days)>0:
+            empty_days = list(set(home_empty_days)&set(away_empty_days))
+            
+        if len(empty_days)>0:
+            return empty_days[0]+now_day
+        
+        if day>=deadline:
+            return -1       
 
 def create_empty_position(dict_pos, players):
     for p in players:
@@ -93,11 +126,11 @@ def search_player(ProLeague, all_member, uuid_):
         player = [p for p in t.affilation_players if p.uuid == uuid.UUID(uuid_)][0]
     return player
 
-def set_rental_transfer(rental_players, t):
+def set_rental_transfer(rental_players, t_uuid, t_name):
     for p in rental_players:
         p.rental = 1
-        p.origin_team = t
-        p.origin_team_name = t.name
+        p.origin_team_uuid = t_uuid
+        p.origin_team_name = t_name
 
 def team_count(p):
     output = []

@@ -39,6 +39,7 @@ class Team(Object):
 
         # CL変数
         self.cl_variable = None
+        self.league_uuid = None
 
     def set_register_players(self, injury_level=100, change_register=True):
         for p in self.affilation_players:
@@ -232,6 +233,13 @@ class Team(Object):
                 self.empty_position[pos] += 1
             else:
                 self.empty_position[pos] = 1
+    
+    # リーグ戦、カップ戦の結果をsetする
+    def set_player_result(self, competition_name, year, kind):
+        for p in self.affilation_players:
+            p.set_player_result(competition_name, year, kind)
+            p.set_history(self.name, year)
+            p.recovery_vitality(off=True)
     
     # empety_positionに沿った選手を移籍市場から獲得する
     def get_free_players_starting(self, free_players, league):
