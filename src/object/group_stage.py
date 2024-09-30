@@ -1,4 +1,3 @@
-import uuid
 import numpy as np
 import pandas as pd
 
@@ -7,14 +6,15 @@ sys.path.append("../")
 
 from src.object.game import Game
 from src.utils import create_sections
+from src.object.object import Object
 
 def apply_points(row):
     return row.win*3+row.row
 
-class Group_Stage:
-    def __init__(self, name, year, group_num, g_team_num, df_name_list):
+class Group_Stage(Object):
+    def __init__(self, name, year, group_num, g_team_num):
+        super().__init__()
         self.name = name
-        self.uuid = uuid.uuid1()
         self.year = year
 
         self.competition_teams = []
@@ -25,8 +25,6 @@ class Group_Stage:
         self.sections = create_sections(num=self.g_team_num)
         self.sections_num = 0
 
-        self.df_name_list = df_name_list
-
     def set_group_random(self):
         for gn in range(self.group_num):
             all_team_name = [t.name for t in self.competition_teams[gn*self.g_team_num:(gn+1)*self.g_team_num]]
@@ -34,7 +32,7 @@ class Group_Stage:
             output = pd.DataFrame(np.zeros((len(all_team_name), 5)), 
                                   index=all_team_name, 
                                   columns=["win", "lose", "row", "得点", "失点"], 
-                                  dtype=np.int8)
+                                  dtype=np.int16)
             self.group_result[f"group_{gn}"] = output
     
     def cal_result(self, win_rank):
@@ -64,8 +62,7 @@ class Group_Stage:
                             moment_num=24,
                             random_std=0.3)
                 game.battle(year=self.year,
-                            kind="EU_杯",
-                            df_name_list=self.df_name_list)
+                            kind="EU_杯")
 
                 if game.result=="home":
                     self.group_result[f"group_{gn}"].loc[home_team.name, "win"] += 1

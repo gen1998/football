@@ -1,18 +1,19 @@
 import numpy as np
-import uuid
 import random
 
 import sys
 sys.path.append("../")
 
 from config.config import ALL_POSITON, ALL_POSITON_LOW
+from config.name import PLAYER_NAMES
 from src.utils import rate_function
+from src.object.object import Object
 
-class FootBaller:
-    def __init__(self, name, age, now_year, main_position, injury_possibility, grow_position_type, recovery_power):
+class FootBaller(Object):
+    def __init__(self, age, now_year, main_position, injury_possibility, grow_position_type, recovery_power):
         # 選手固有の値
-        self.uuid = uuid.uuid1()
-        self.name = name
+        super().__init__()
+        self.name = random.choice(PLAYER_NAMES)
         self.age = age
         self.born_year = now_year-age
         self.grow_min_age = min(max(np.int8(np.round(np.random.normal(24, 1))), 22), 26)
@@ -33,7 +34,8 @@ class FootBaller:
         self.injury = 0
         self.contract = 0
         self.free_time = 0
-        self.origin_team = None
+        self.team_uuid = None
+        self.origin_team_uuid = None ##レンタル移籍した場合に使用する
         self.origin_team_name = ""
         self.b_team_count = 0
 
@@ -162,12 +164,12 @@ class FootBaller:
             self.contract = min(max(np.int8(np.round(np.random.normal((40 - self.age)/4, 0.5))), 1), 7)
 
 class FieldPlayer(FootBaller):
-    def __init__(self, name, age, now_year, position, pace, shooting, 
+    def __init__(self, age, now_year, position, pace, shooting, 
                  passing, dribbling, defending, physicality, 
                  injury_possibility=0, 
                  grow_position_type=None,
                  recovery_power=100):
-        super().__init__(name, age, now_year, position, injury_possibility, grow_position_type, recovery_power)
+        super().__init__(age, now_year, position, injury_possibility, grow_position_type, recovery_power)
         self.pace = pace
         self.shooting = shooting
         self.passing = passing
@@ -395,12 +397,12 @@ class FieldPlayer(FootBaller):
         self.evaluate_rate = evaluate_rate
 
 class GK(FootBaller):
-    def __init__(self, name, age, now_year, position, diving, 
+    def __init__(self, age, now_year, position, diving, 
                  handling, kicking, reflexes, 
                  speed, positioning, injury_possibility=0,
                  grow_position_type=None,
                  recovery_power=100):
-        super().__init__(name, age, now_year, position, injury_possibility, grow_position_type, recovery_power)
+        super().__init__(age, now_year, position, injury_possibility, grow_position_type, recovery_power)
         self.diving = diving
         self.handling = handling
         self.kicking = kicking
@@ -530,14 +532,13 @@ class GK(FootBaller):
         self.evaluate_rate = evaluate_rate
 
 class Create_player:
-    def __init__(self, position_num, min_rate, max_rate, age_mean, df_name_list, 
+    def __init__(self, position_num, min_rate, max_rate, age_mean, 
                  mean_rate=75, now_year=1900):
         # 初期値
         self.position_num = position_num
         self.min_rate = min_rate
         self.max_rate = max_rate
         self.mean_rate = mean_rate
-        self.df_name_list = df_name_list
         self.age_mean = age_mean
         self.now_year = now_year
 
@@ -569,7 +570,7 @@ class Create_player:
                 injury_possibility = np.random.normal(0.035, 0.02) + max((self.pac-85)*0.005, 0)
                 recovery_power = min(max(np.random.normal(69, 5), 50), 80)
 
-                A = FieldPlayer(age=18, now_year=self.now_year, name=random.choice(self.df_name_list), position=None,
+                A = FieldPlayer(age=18, now_year=self.now_year, position=None,
                                 pace=self.pac, shooting=self.sho, passing=self.pas,
                                 dribbling=self.dri, defending=self.de, physicality=self.phy,
                                 injury_possibility=injury_possibility,
@@ -618,7 +619,7 @@ class Create_player:
             else:
                 age = min(max(np.int8(np.round(np.random.normal(self.age_mean, 5))), 18), 37)
 
-            A = GK(name=random.choice(self.df_name_list), age=age, now_year=self.now_year, 
+            A = GK(age=age, now_year=self.now_year, 
                    position="GK",diving=div, handling=han, kicking=kic,
                    reflexes=ref, speed=spe, positioning=pos,
                    injury_possibility=injury_possibility,

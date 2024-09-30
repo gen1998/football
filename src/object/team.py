@@ -1,19 +1,18 @@
 import pandas as pd
 import random
-import uuid
 
 import sys
 sys.path.append("../")
 
 from config.config import ALL_POSITON_LOW, ALL_POSITON_LOW_GK, BENCH_POSITION_NUM, POSITION_LOW_DICT, YOUNG_OLD
 from src.object.player import Create_player
+from src.object.object import Object
 
-class Team:
+class Team(Object):
     def __init__(self, name, formation, member_num=30, before_rank=1):
         # 固定値
+        super().__init__()
         self.name = name
-        self.uuid = uuid.uuid1()
-        self.league_name = None
         self.member_num = member_num
         self.formation = formation
 
@@ -39,6 +38,8 @@ class Team:
 
         # CL変数
         self.cl_variable = None
+        self.league_uuid = None
+        self.league_name = None
 
     def set_register_players(self, injury_level=100, change_register=True):
         for p in self.affilation_players:
@@ -58,7 +59,7 @@ class Team:
             self.not_register_players = [p for p in self.affilation_players if p.register==0]
             self.register_players = [p for p in self.affilation_players if p.register==1]
 
-    def set_onfield_players(self, year, mean_rate, df_name_list, competition_name, kind):
+    def set_onfield_players(self, year, mean_rate, competition_name, kind):
         self.formation.set_players_position()
         self.formation.set_main_rate_formation()
         self.formation.players_flat = []
@@ -98,8 +99,7 @@ class Team:
                                         min_rate=40, max_rate=80, 
                                         age_mean=19,
                                         now_year=year,
-                                        mean_rate=mean_rate,
-                                        df_name_list=df_name_list)
+                                        mean_rate=mean_rate)
                     Cp.create_teams(new=True)
                     p_s = Cp.players
 
@@ -233,6 +233,13 @@ class Team:
             else:
                 self.empty_position[pos] = 1
     
+    # リーグ戦、カップ戦の結果をsetする
+    def set_player_result(self, competition_name, year, kind):
+        for p in self.affilation_players:
+            p.set_player_result(competition_name, year, kind)
+            p.set_history(self.name, year)
+            p.recovery_vitality(off=True)
+    
     # empety_positionに沿った選手を移籍市場から獲得する
     def get_free_players_starting(self, free_players, league):
         count = 1
@@ -240,8 +247,8 @@ class Team:
         league_min_rate = league.min_rate
 
         # 所属チームの強さ
-        slope = -(league.max_starting_mean_rate-league.min_starting_mean_rate)/19
-        intercept = (20*league.max_starting_mean_rate-league.min_starting_mean_rate-2)/19
+        slope = -(league.max_starting_mean_rate-league.min_starting_mean_rate)/(league.num-1)
+        intercept = (league.num*league.max_starting_mean_rate-league.min_starting_mean_rate-2)/(league.num-1)
 
         if self.league_state == "stay":
             max_rating = slope * self.before_rank + intercept
