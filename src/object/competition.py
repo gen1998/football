@@ -11,7 +11,7 @@ from src.object.object import Object
 from src.utils import search_empty_day
 
 class Competition(Object):
-    def __init__(self, name, year, country_uuid, df_name_list):
+    def __init__(self, name, year, country_uuid):
         super().__init__()
         self.name = name
         self.year = year
@@ -22,8 +22,8 @@ class Competition(Object):
         self.competition_result = {}
         self.now_round = 1
         self.max_round = None
-
-        self.df_name_list = df_name_list
+        self.before_day = 0
+        self.interval = 0
     
     def set_max_round(self):
         num_teams = len(self.competition_teams_uuid)
@@ -32,10 +32,11 @@ class Competition(Object):
                 break
         self.max_round = max_round
     
-    def set_competition(self, teams_uuid):
+    def set_competition(self, teams_uuid, period=200):
         self.competition_teams_uuid = []
         self.competition_teams_uuid.extend(teams_uuid)
         self.set_max_round()
+        self.interval = period//(self.max_round-1)
         random.shuffle(self.competition_teams_uuid)
         output = pd.DataFrame(columns=["チームA", "チームB", "勝利", "スコア", "ラウンド"])
         self.competition_result[self.name] = output
@@ -47,8 +48,10 @@ class Competition(Object):
             self.origin_competition_teams_uuid = self.competition_teams_uuid.copy()
         else:
             game1_teams = self.competition_teams_uuid.copy()
+            now_day = self.before_day + self.interval
 
         random.shuffle(game1_teams)
+        empty_days = []
         
         for index in range(0, len(game1_teams), 2):
             home = game1_teams[index]
@@ -70,6 +73,10 @@ class Competition(Object):
 
             calendar[empty_day][home] = [away, 1, "competition", self.uuid]
             calendar[empty_day][away] = [home, 1, "competition", self.uuid]
+            empty_days.append(empty_day)
+        
+        # 今回戦の日にちを保存しておく
+        self.before_day = int(min(empty_days))
         
         return calendar
     
@@ -79,8 +86,7 @@ class Competition(Object):
                         moment_num=24, random_std=0.3, pk=1)
         
         cup_game.battle(year=self.year,
-                        kind="カップ戦",
-                        df_name_list=self.df_name_list)
+                        kind="カップ戦")
         
         if cup_game.result=="home" or cup_game.result=="home-pk":
             win = home

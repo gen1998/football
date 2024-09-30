@@ -1,19 +1,14 @@
 import pandas as pd
 import random
 import time
-import uuid
-import datetime
 from tqdm import tqdm
 
 import sys
 sys.path.append("../")
 
-from src.utils import set_rental_transfer, create_sections_calendar, create_cup_calendar, create_sections
-from src.object.proleague import Competition
+from src.utils import set_rental_transfer, create_sections_calendar
 from src.object.player import Create_player
-from src.object.continental import Continental_Cup
-from src.object.game import Game
-from config.config import YOUNG_OLD, LEAGUE_LEVEL_MAX, ONE_YEAR_DAYS, WEEK_DAY_LIST
+from config.config import YOUNG_OLD, LEAGUE_LEVEL_MAX, ONE_YEAR_DAYS
 
 class Worldsoccer:
     def __init__(self, country_leagues, continental_cups_dict={"CL":32}):
@@ -45,6 +40,9 @@ class Worldsoccer:
         self.all_countries = self.country_leagues
         self.all_leagues = [l for c in self.all_countries for l in c.leagues]
         self.all_teams = [t for l in self.all_leagues for t in l.teams]
+        for t in self.all_teams:
+            for p in t.affilation_players:
+                p.team_uuid = t.uuid
         self.all_active_players = [p for t in self.all_teams for p in t.affilation_players]
         
     def set_calendar(self):
@@ -70,7 +68,7 @@ class Worldsoccer:
     def search_country(self, team):
         league = [l for l in self.all_leagues if l.uuid==team.league_uuid][0]
         country = [c for c in self.all_countries if c.uuid==league.country_uuid][0]
-        return country
+        return country.name
         
     def prepare_1season(self, year):
         for c in self.all_countries:
@@ -127,21 +125,23 @@ class Worldsoccer:
                         elif len(t_result)>1:
                             country = [c for c in self.all_countries if c.uuid==competition.country_uuid][0]
                             country.competition_result_top.loc[competition.name, ["年度", "優勝", "準優勝"]] = t_result
+                            tqdm.write(f"\nWin <{competition.name}> : {t_result[1]}\n")
                     
             self.debug_calendar = CALENDAR
             
-            if progress_day!=0 and (progress_day%100==0 or progress_day==ONE_YEAR_DAYS-1):
+            if progress_day!=0 and progress_day!=300 and (progress_day%100==0 or progress_day==ONE_YEAR_DAYS-1):
+                tqdm.write("\n")
                 for l in self.all_leagues:
                     l.cal_team_rank(year)
-                    if l.league_level==1:
+                    if l.league_level<10:
                         txt = f"{l.name} : "
-                        buff = l.team_result[f'{l.name}_{year}'].iloc[:3][["Points"]]
+                        buff = l.team_result[f'{l.name}_{year}'].iloc[:1][["Points"]]
                         txt += " >> ".join([f"{name} {rank+1}位({row.Points}PTS)" for rank, (name, row) in enumerate(buff.iterrows())])
                         txt += " // "
-                        buff = l.team_result[f'{l.name}_{year}'].iloc[-3:][["Points"]]
+                        buff = l.team_result[f'{l.name}_{year}'].iloc[-1:][["Points"]]
                         txt += " >> ".join([f"{name} {rank+18}位({row.Points}PTS)" for rank, (name, row) in enumerate(buff.iterrows())])
                         tqdm.write(txt)
-                    
+                tqdm.write("\n")
         
         # リーグ成績の計算
         for l in self.all_leagues:
@@ -234,6 +234,7 @@ class Worldsoccer:
                 for t in promotion_team:
                     t.league_state = "promotion"
                     t.league_uuid = l.upperleague_uuid
+                    t.league_name = l.upperleague_name
 
             if l.category!="lowest":
                 relegation =l.relegation[season_name]
@@ -241,11 +242,12 @@ class Worldsoccer:
                 for t in relegation_team:
                     t.league_state = "relegation"
                     t.league_uuid = l.lowerleague_uuid
+                    t.league_name = l.lowerleague_name
         
         self.all_competitions.extend(self.all_competitions)
         self.all_competitions = []
     
-    def play_offseason(self, df_name_list, year):
+    def play_offseason(self, year):
         print("オフシーズン")
         print("-"*30)
 
@@ -393,8 +395,7 @@ class Worldsoccer:
                                                 min_rate=40, max_rate=80, 
                                                 age_mean=19,
                                                 now_year=year,
-                                                mean_rate=l.mean_rate,
-                                                df_name_list=df_name_list)
+                                                mean_rate=l.mean_rate)
                             
                             Cp.create_teams(new=True)
                             t.check_duplication()

@@ -45,25 +45,6 @@ def create_sections_calendar(league, teams, calendar, period=300):
             calendar[day][away.uuid] = (home.uuid, section+1, "league", league.uuid)
         day += interval
 
-def create_cup_calendar(competition, calendar, period=300, interval=7):
-    competition_rest_teams_uuid = competition.competition_teams_uuid
-    section_num = period//interval
-    cup_interval = section_num//(competition.max_round)
-    
-    section = 0
-    rest_section = 0
-    interval_ = interval//2
-    
-    for s in range(section_num):
-        if section>=competition.max_round:
-            break
-            
-        if s==cup_interval*rest_section:
-            if "CL" not in calendar[s*interval+interval_].keys():
-                calendar[s*interval+interval_][f"{competition.uuid}_cup"] = f"Cup_{section+1}"
-                section+=1
-            rest_section += 1
-
 def search_empty_day(calendar, home_uuid, away_uuid, now_day, rest_interval=3, deadline=30):
     home_game = []
     away_game = []

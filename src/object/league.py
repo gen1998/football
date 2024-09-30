@@ -14,7 +14,6 @@ def apply_points(row):
 
 class League(Object):
     def __init__(self, name, teams, num, category, league_level,
-                 df_name_list,
                  relegation_num=0, promotion_num=0, 
                  min_rate=75, max_rate=85, mean_rate=80,
                  min_starting_mean_rate=73,
@@ -42,7 +41,9 @@ class League(Object):
         # 接続
         self.country_uuid = None
         self.upperleague_uuid = None
+        self.upperleague_name = None
         self.lowerleague_uuid = None
+        self.lowerleague_name = None
 
         # 結果
         self.team_result = {}
@@ -59,8 +60,6 @@ class League(Object):
         self.relegation_num = relegation_num
         self.promotion = {}
         self.promotion_num = promotion_num
-
-        self.df_name_list = df_name_list
     
     def set_record_keys(self):
         self.teams_record["champions"] = {}
@@ -89,7 +88,7 @@ class League(Object):
         output = pd.DataFrame(np.zeros((len(all_team_name), 5)), 
                               index=all_team_name, 
                               columns=["win", "lose", "row", "得点", "失点"], 
-                              dtype=np.int8)
+                              dtype=np.int16)
         self.team_result[season_name] = output
     
     def play_1section(self, year, home, away):
@@ -99,8 +98,7 @@ class League(Object):
                     competition_name=season_name,
                     moment_num=24, random_std=0.3)
         game.battle(year=year,
-                    kind="リーグ",
-                    df_name_list=self.df_name_list)
+                    kind="リーグ")
 
         home_team_name = home.name
         away_team_name = away.name
@@ -447,20 +445,3 @@ class League(Object):
         all_output = all_output.reset_index(drop=True)
         
         return all_output
-    
-    # コンペティション最多得点
-    
-    """
-    df_search = all_output[(all_output["分類"]=="カップ戦")]
-    df_search_index = df_search.loc[df_search["goal"]==df_search["goal"].max(), :].index.tolist()
-    competition_result_top.loc[competition_name, "得点王"] = ""
-    for index in df_search_index:
-        all_output.loc[index, "賞"] += f"得点王({competition_name}),"
-        competition_result_top.loc[competition_name, "得点王"] += f"{df_search.loc[index, '名前']}({df_search.loc[index, 'チーム']}({df_search.loc[index, 'リーグ']})), "  
-    competition_result_top.loc[competition_name, "得点王"] += f"/  {df_search.loc[index, 'goal']}点"
-
-    players_result = pd.concat([players_result, all_output])
-    players_result = players_result.reset_index(drop=True)
-
-    return players_result[((players_result["リーグレベル"]==1)&(players_result["出場時間"]>19*2*90*0.8)&(players_result["年度"]==year)&(players_result["試合数"]>(self.num-1)*2*0.85))]
-    """

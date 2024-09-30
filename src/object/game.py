@@ -139,7 +139,7 @@ class Game:
         if self.now_time<self.moment_num:
             self.change_player()
 
-    def battle(self, year, kind, df_name_list):
+    def battle(self, year, kind):
         self.home_goal = 0
         self.away_goal = 0
 
@@ -157,9 +157,9 @@ class Game:
             p.set_game_variable()
         
         # スターティングメンバーを作る
-        self.home.set_onfield_players(year, 58, df_name_list, self.competition_name, kind)
+        self.home.set_onfield_players(year, 58, self.competition_name, kind)
         self.home.formation.cal_team_rate()
-        self.away.set_onfield_players(year, 58, df_name_list, self.competition_name, kind)
+        self.away.set_onfield_players(year, 58, self.competition_name, kind)
         self.away.formation.cal_team_rate()
 
         # 試合数・ポジションカウント
